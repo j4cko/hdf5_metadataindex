@@ -4,6 +4,28 @@
 #include "hdf5_hl.h"
 #include <iostream>
 #include <sstream>
+std::string typeToString(Type const & type) {
+  switch(type) {
+    case Type::FLOAT_DOUBLE: return "double";
+    case Type::FLOAT_SINGLE: return "float";
+    case Type::INT_SHORT:    return "short int";
+    case Type::INT_LONG:     return "long int";
+    case Type::UINT_SHORT:   return "unsigned long int";
+    case Type::UINT_LONG:    return "unsigned short int";
+    case Type::STRING:       return "string";
+    default: throw std::runtime_error("typeToString: unknown / unimplemented type.");
+  }
+}
+Type typeFromTypeid(std::type_info const & tinfo) {
+  if( typeid(double) == tinfo )             return Type::FLOAT_DOUBLE;
+  else if( tinfo == typeid(float) )         return Type::FLOAT_SINGLE;
+  else if( tinfo == typeid(int) )           return Type::INT_LONG;
+  else if( tinfo == typeid(char) )          return Type::INT_SHORT;
+  else if( tinfo == typeid(unsigned int) )  return Type::UINT_LONG;
+  else if( tinfo == typeid(unsigned char) ) return Type::UINT_SHORT;
+  else if( tinfo == typeid(std::string) )   return Type::STRING;
+  else throw std::runtime_error("typeFromTypeid: unknown type.");
+}
 void printIndex(Index const & idx, std::ostream& os) {
   for ( auto dataset : idx ) {
     os << "dataset: " << dataset.second << 
@@ -77,15 +99,16 @@ Index indexFile(std::string filename) {
   }
   hid_t file_id = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   if( file_id < 0 ) throw std::runtime_error("could not open file.");
-  herr_t res = H5Ovisit(file_id, H5_INDEX_NAME, H5_ITER_NATIVE, 
+  herr_t visitres = H5Ovisit(file_id, H5_INDEX_NAME, H5_ITER_NATIVE, 
                         h5_obj_iterate, &res);
   H5Fclose(file_id);
-  if( res == -1 ) throw std::runtime_error("strings are not implemented.");
-  else if( res == -2 ) throw std::runtime_error("unimplemented datatype.");
-  else if( res < 0 )throw std::runtime("other unknown error during traversal of"
-                                       "the file.");
+  if( visitres == -1 ) throw std::runtime_error("strings are not implemented.");
+  else if( visitres == -2 ) throw std::runtime_error("unimplemented datatype.");
+  else if( visitres < 0 )throw std::runtime_error("other unknown error during"
+                                                  "traversal of the file.");
   return res;
 }
+/*
 int main(int argc, char** argv) {
   //TODO: make tests out of this:
   Value bla(0);
@@ -112,3 +135,4 @@ int main(int argc, char** argv) {
   printIndex(indexFile(argv[1]), std::cout);
   return 0;
 }
+*/

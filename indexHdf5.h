@@ -52,28 +52,8 @@ enum class Type {
   UINT_LONG,
   STRING
 };
-std::string typeToString(Type const & type) {
-  switch(type) {
-    case Type::FLOAT_DOUBLE: return "double";
-    case Type::FLOAT_SINGLE: return "float";
-    case Type::INT_SHORT:    return "short int";
-    case Type::INT_LONG:     return "long int";
-    case Type::UINT_SHORT:   return "unsigned long int";
-    case Type::UINT_LONG:    return "unsigned short int";
-    case Type::STRING:       return "string";
-    default: throw std::runtime_error("typeToString: unknown / unimplemented type.");
-  }
-}
-Type typeFromTypeid(std::type_info const & tinfo) {
-  if( typeid(double) == tinfo )             return Type::FLOAT_DOUBLE;
-  else if( tinfo == typeid(float) )         return Type::FLOAT_SINGLE;
-  else if( tinfo == typeid(int) )           return Type::INT_LONG;
-  else if( tinfo == typeid(char) )          return Type::INT_SHORT;
-  else if( tinfo == typeid(unsigned int) )  return Type::UINT_LONG;
-  else if( tinfo == typeid(unsigned char) ) return Type::UINT_SHORT;
-  else if( tinfo == typeid(std::string) )   return Type::STRING;
-  else throw std::runtime_error("typeFromTypeid: unknown type.");
-}
+std::string typeToString(Type const & type);
+Type typeFromTypeid(std::type_info const & tinfo);
 class Attribute {
   public:
     template<typename T>
