@@ -14,14 +14,48 @@ void printIndex(Index const & idx, std::ostream& os) {
     }
   }
 }
+herr_t h5_attr_iterate( hid_t o_id, const char *name, const H5A_info_t *attrinfo, void *opdata) {
+  std::vector<Attribute>* attrs = (std::vector<Attribute>*)opdata;
+  hid_t attr_id = H5Aopen(o_id, name, H5P_DEFAULT);
+  hid_t dtype = H5Aget_type(attr_id);
+  H5T_class_t typeclass = H5Tget_class(dtype);
+  hid_t memtype = -1;
+  int intbuf; double floatbuf;
+  switch( typeclass ) {
+    case H5T_INTEGER:
+      memtype = H5Tcopy(H5T_NATIVE_INT);
+      H5Aread(attr_id, memtype, &intbuf);
+      H5Tclose(memtype);
+      attrs->push_back(Attribute(name, intbuf));
+      break;
+    case H5T_FLOAT:
+      memtype = H5Tcopy(/*H5T_IEEE_F64LE*/ H5T_NATIVE_DOUBLE);
+      H5Aread(attr_id, memtype, &floatbuf);
+      H5Tclose(memtype);
+      attrs->push_back(Attribute(name, floatbuf));
+      break;
+    case H5T_STRING:
+      throw std::runtime_error("strings are unimplemented!");
+      break;
+    default:
+      throw std::runtime_error("unsupported datatype!");
+  }
+  herr_t res = H5Tclose(dtype);
+  res &= H5Aclose(attr_id);
+  return 0;
+}
+herr_t h5_obj_iterate( hid_t o_id, const char *name, const H5O_info_t *objinfo, void *opdata) {
+  Index* idx = (Index*)opdata;
 
-void traverseFile(hid_t const & obj_id, Index& idx) {
-  // list members:
-  //
-  // for each group: traverse(...)
-  //
-  // if member == dataset:
-  // add to index.
+  std::vector<Attribute> attrs;
+  hid_t obj_open_id = H5Oopen(o_id, name, H5P_DEFAULT);
+  if( obj_open_id <= 0 ) throw std::runtime_error("cannot open object.");
+  herr_t res = H5Aiterate2(obj_open_id, H5_INDEX_NAME, H5_ITER_NATIVE, 
+                           NULL, h5_attr_iterate, &attrs);
+  if( res < 0 ) throw std::runtime_error("error returned by H5Aiterate.");
+  if( H5Oclose(obj_open_id) != 0 ) throw std::runtime_error("cannot close object.");
+  idx->push_back({attrs, std::string(name)});
+  return 0;
 }
 Index indexFile(std::string filename) {
   Index res;
@@ -38,7 +72,7 @@ Index indexFile(std::string filename) {
   hid_t file_id = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   if( file_id < 0 ) throw std::runtime_error("could not open file.");
   try {
-    traverseFile(file_id, res);
+    H5Ovisit(file_id, H5_INDEX_NAME, H5_ITER_NATIVE, h5_obj_iterate, &res);
   } catch (...) {
     H5Fclose(file_id);
     throw;
