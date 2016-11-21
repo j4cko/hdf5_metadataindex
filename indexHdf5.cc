@@ -42,6 +42,8 @@ herr_t h5_attr_iterate( hid_t o_id, const char *name, const H5A_info_t *attrinfo
 herr_t h5_obj_iterate( hid_t o_id, const char *name, const H5O_info_t *objinfo, void *opdata) {
   Index* idx = (Index*)opdata;
 
+  if( std::string(name) == ".") return 0; // ignore the root node
+
   std::vector<Attribute> attrs;
   hid_t obj_open_id = H5Oopen(o_id, name, H5P_DEFAULT);
   if( obj_open_id <= 0 ) throw std::runtime_error("cannot open object.");

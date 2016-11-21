@@ -29,10 +29,13 @@ int main(int argc, char** argv) {
 
   sqlite3 *db;
   sqlite3_open(sqlfile.c_str(), &db);
-  prepareSqliteFile(&db);
-  sqlite3_close(db);
+  prepareSqliteFile(db);
 
   Index idx = indexFile(h5file);
+
+  insertDataset(db, idx);
+
+  sqlite3_close(db);
   
  // printIndex(indexFile(argv[1]), std::cout);
   return 0;
