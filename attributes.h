@@ -5,6 +5,9 @@
 #include <typeinfo>
 #include <stdexcept>
 #include <cassert>
+#include <ostream>
+template<typename T>
+void print(T & val, std::ostream& os) { os << val; };
 class Value {
 public:
   template <typename T>
@@ -28,16 +31,22 @@ public:
       throw std::runtime_error("Value.get(): types do not match.");
     return (Tout)((Model<Tout> *)content)->object;
   }
+  friend std::ostream& operator<<(std::ostream& os, Value const & val) {
+    val.content->print(os);
+    return os;
+  }
 private:
   struct Concept {
     virtual ~Concept() {}
     Concept() = delete;
     Concept(std::type_info const &ti_) : ti(ti_) {}
     virtual Concept *clone() const = 0;
+    virtual void print(std::ostream& os) = 0;
     std::type_info const &ti;
   };
   template <typename T> struct Model : Concept {
     Model(T const &value) : Concept(typeid(T)), object(value) {}
+    void print(std::ostream& os){ os << object; }
     Concept *clone() const { return new Model(object); }
     T object;
   };
