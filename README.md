@@ -36,7 +36,7 @@ request.
 
   * **more logic in requests**: 
     specifiers like "not", "one-of", etc. to attributes might be 
-    interesting.
+    interesting. Also ranges are a natural extension.
   * **notice if the file has changed**
     save the file mtime and checksum in the database and 
     update / refuse if the index is not in sync with the file.
@@ -45,3 +45,7 @@ request.
     also be used to create file lists. 
     Example: "get all messpec data (kappa=...) of H101" returns a list
     of files and datasets that return relevant data.
+  * **lua-post-selection**:
+    after preselection by matching of the attributes, lua code is executed on
+    every hit. If it returns `true`, the hit is returned, otherwise it is
+    discarded.
