@@ -35,10 +35,15 @@ herr_t h5_attr_iterate( hid_t o_id, const char *name, const H5A_info_t *attrinfo
       attrs->push_back(Attribute(name, floatbuf));
       break;
     case H5T_STRING:
-      throw std::runtime_error("strings are unimplemented!");
+      //should not throw from here.... therefore:
+      H5Tclose(dtype);
+      H5Aclose(attr_id);
+      return -1;
       break;
     default:
-      throw std::runtime_error("unsupported datatype!");
+      H5Tclose(dtype);
+      H5Aclose(attr_id);
+      return -2;
   }
   herr_t res = H5Tclose(dtype);
   res &= H5Aclose(attr_id);
@@ -52,8 +57,9 @@ herr_t h5_obj_iterate( hid_t o_id, const char *name, const H5O_info_t *objinfo, 
   if( obj_open_id <= 0 ) throw std::runtime_error("cannot open object.");
   herr_t res = H5Aiterate2(obj_open_id, H5_INDEX_NAME, H5_ITER_NATIVE, 
                            NULL, h5_attr_iterate, &attrs);
-  if( res < 0 ) throw std::runtime_error("error returned by H5Aiterate.");
-  if( H5Oclose(obj_open_id) != 0 ) throw std::runtime_error("cannot close object.");
+  if( res < 0 ) return res;
+  res = H5Oclose(obj_open_id);
+  if( res < 0 ) return res;
   idx->push_back({attrs, std::string(name)});
   return 0;
 }
@@ -71,13 +77,13 @@ Index indexFile(std::string filename) {
   }
   hid_t file_id = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   if( file_id < 0 ) throw std::runtime_error("could not open file.");
-  try {
-    H5Ovisit(file_id, H5_INDEX_NAME, H5_ITER_NATIVE, h5_obj_iterate, &res);
-  } catch (...) {
-    H5Fclose(file_id);
-    throw;
-  }
+  herr_t res = H5Ovisit(file_id, H5_INDEX_NAME, H5_ITER_NATIVE, 
+                        h5_obj_iterate, &res);
   H5Fclose(file_id);
+  if( res == -1 ) throw std::runtime_error("strings are not implemented.");
+  else if( res == -2 ) throw std::runtime_error("unimplemented datatype.");
+  else if( res < 0 )throw std::runtime("other unknown error during traversal of"
+                                       "the file.");
   return res;
 }
 int main(int argc, char** argv) {
