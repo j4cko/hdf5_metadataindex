@@ -1,5 +1,7 @@
 #include "attributes.h"
 #include "indexHdf5.h"
+#include "sqliteHelpers.h"
+
 #include <iostream>
 int main(int argc, char** argv) {
   //TODO: make tests out of this:
@@ -19,11 +21,19 @@ int main(int argc, char** argv) {
   printIndex(testind, std::cout);
 
 
-  if( argc != 2 ) {
-    std::cerr << "wrong number of arguments." << std::endl;
-    std::abort();
-  }
+  if( argc != 3 ) { std::cerr << "wrong number of arguments." << std::endl;
+                    return -1; }
+
+  const std::string h5file(argv[1]);
+  const std::string sqlfile(argv[2]);
+
+  sqlite3 *db;
+  sqlite3_open(sqlfile.c_str(), &db);
+  prepareSqliteFile(&db);
+  sqlite3_close(db);
+
+  Index idx = indexFile(h5file);
   
-  printIndex(indexFile(argv[1]), std::cout);
+ // printIndex(indexFile(argv[1]), std::cout);
   return 0;
 }

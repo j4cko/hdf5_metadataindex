@@ -4,38 +4,6 @@
 #include "hdf5_hl.h"
 #include <iostream>
 #include <sstream>
-std::string typeToString(Type const & type) {
-  switch(type) {
-    case Type::FLOAT_DOUBLE: return "double";
-    case Type::FLOAT_SINGLE: return "float";
-    case Type::INT_SHORT:    return "short int";
-    case Type::INT_LONG:     return "long int";
-    case Type::UINT_SHORT:   return "unsigned long int";
-    case Type::UINT_LONG:    return "unsigned short int";
-    case Type::STRING:       return "string";
-    default: throw std::runtime_error("typeToString: unknown / unimplemented type.");
-  }
-}
-Type typeFromTypeid(std::type_info const & tinfo) {
-  if( typeid(double) == tinfo )             return Type::FLOAT_DOUBLE;
-  else if( tinfo == typeid(float) )         return Type::FLOAT_SINGLE;
-  else if( tinfo == typeid(int) )           return Type::INT_LONG;
-  else if( tinfo == typeid(char) )          return Type::INT_SHORT;
-  else if( tinfo == typeid(unsigned int) )  return Type::UINT_LONG;
-  else if( tinfo == typeid(unsigned char) ) return Type::UINT_SHORT;
-  else if( tinfo == typeid(std::string) )   return Type::STRING;
-  else throw std::runtime_error("typeFromTypeid: unknown type.");
-}
-void printIndex(Index const & idx, std::ostream& os) {
-  for ( auto dataset : idx ) {
-    os << "dataset: " << dataset.second << 
-      " has the following attributes:" << std::endl;
-    for ( auto attr : dataset.first ) {
-      os << "  - " << attr.getName() 
-        << " (" << typeToString(attr.getType()) << ")" << std::endl;
-    }
-  }
-}
 herr_t h5_attr_iterate( hid_t o_id, const char *name, const H5A_info_t *attrinfo, void *opdata) {
   std::vector<Attribute>* attrs = (std::vector<Attribute>*)opdata;
   hid_t attr_id = H5Aopen(o_id, name, H5P_DEFAULT);
@@ -108,31 +76,13 @@ Index indexFile(std::string filename) {
                                                   "traversal of the file.");
   return res;
 }
-/*
-int main(int argc, char** argv) {
-  //TODO: make tests out of this:
-  Value bla(0);
-  std::cout << (int)bla << std::endl;
-  bla = 5;
-  std::cout << (int)bla << std::endl;
-  bla = (int)bla + 3;
-  std::cout << (int)bla << std::endl;
-
-  Attribute attr("exampleattr", 5);
-  std::cout << typeToString(attr.getType()) << std::endl;
-  Attribute attr2("exampleattr2", 6.432);
-  std::cout << typeToString(attr2.getType()) << (double) attr2.getValue() << std::endl;
-  Index testind;
-  testind.push_back({{attr, attr2}, "testpath"});
-  printIndex(testind, std::cout);
-
-
-  if( argc != 2 ) {
-    std::cerr << "wrong number of arguments." << std::endl;
-    std::abort();
+void printIndex(Index const & idx, std::ostream& os) {
+  for ( auto dataset : idx ) {
+    os << "dataset: " << dataset.second << 
+      " has the following attributes:" << std::endl;
+    for ( auto attr : dataset.first ) {
+      os << "  - " << attr.getName() 
+        << " (" << typeToString(attr.getType()) << ")" << std::endl;
+    }
   }
-  
-  printIndex(indexFile(argv[1]), std::cout);
-  return 0;
 }
-*/
