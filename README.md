@@ -15,6 +15,18 @@ to the requested dataset without even opening the hdf5 file.
 
 ## Requests ##
 
+### Atomic Datatypes ###
+
+Attributes hold values that compare to values set in the target files. Requests
+distinguish only between
+
+  * **numeric**
+  * **boolean**
+  * **string**
+
+types and lists thereof.
+
+
 ### At the moment ###
 
 A request is a list of attributes with certain values. More than one
