@@ -47,9 +47,11 @@ int main(int argc, char** argv) {
   auto ids = getLocIds(db, req);
   Index idx = idsToIndex(db, ids);
 
+  auto res = idsToDsetnames(db, ids);
   sqlite3_close(db);
 
   printIndex(idx, std::cout);
+  for( auto name : res ) { std::cout << name << std::endl; }
 
   return 0;
 }

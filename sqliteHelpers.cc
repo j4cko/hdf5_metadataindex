@@ -86,9 +86,6 @@ void insertDataset(sqlite3 *db,
       sstr <<
         "insert or ignore into attributes(attrname,type) values(\"" <<
         attr.getName() << "\", \"" << typeToString(attr.getType()) << "\");";
-      std::cout <<
-        "insert or ignore into attributes(attrname,type) values(\"" <<
-        attr.getName() << "\", \"" << typeToString(attr.getType()) << "\");" << std::endl;
     }
   }
   sstr << "commit transaction;";
@@ -145,7 +142,7 @@ std::vector<int> getLocIds(sqlite3 *db, Request const & req) {
   }
   return res;
 }
-std::vector<std::string> idsToFilenames(sqlite3 *db, std::vector<int> locids) {
+std::vector<std::string> idsToDsetnames(sqlite3 *db, std::vector<int> locids) {
   std::vector<std::string> res;
   std::stringstream sstr;
   if( locids.size() < 1 ) return res;
