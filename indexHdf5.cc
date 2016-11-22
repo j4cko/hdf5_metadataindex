@@ -40,22 +40,6 @@ herr_t h5_attr_iterate( hid_t o_id, const char *name, const H5A_info_t *attrinfo
   res &= H5Aclose(attr_id);
   return 0;
 }
-herr_t h5_obj_iterate( hid_t o_id, const char *name, const H5O_info_t *objinfo, void *opdata) {
-  Index* idx = (Index*)opdata;
-
-  if( std::string(name) == ".") return 0; // ignore the root node
-
-  std::vector<Attribute> attrs;
-  hid_t obj_open_id = H5Oopen(o_id, name, H5P_DEFAULT);
-  if( obj_open_id <= 0 ) throw std::runtime_error("cannot open object.");
-  herr_t res = H5Aiterate2(obj_open_id, H5_INDEX_NAME, H5_ITER_NATIVE, 
-                           NULL, h5_attr_iterate, &attrs);
-  if( res < 0 ) return res;
-  res = H5Oclose(obj_open_id);
-  if( res < 0 ) return res;
-  idx->push_back({attrs, std::string(name)});
-  return 0;
-}
 DatasetSpec processvector( Index const & idxstack ) {
   //copy all attributes along the hierarchical way from the root node to the
   //current node into thisspec:
