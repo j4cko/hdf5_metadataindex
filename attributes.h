@@ -51,8 +51,7 @@ private:
   Concept *content;
 };
 enum class Type {
-  REAL,
-  INTEGER,
+  NUMERIC,
   BOOLEAN,
   STRING
 };
