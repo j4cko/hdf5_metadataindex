@@ -8,5 +8,8 @@
 void prepareSqliteFile(sqlite3 * db);
 void insertDataset(sqlite3 *db, 
      Index const & idx);
-Index queryDb(sqlite3 *db, Request const & req);
+DatasetSpec idsToDatasetSpec(sqlite3 *db, int locid);
+std::vector<std::string> idsToFilenames(sqlite3 *db, std::vector<int> locids);
+std::vector<int> getLocIds(sqlite3 *db, Request const & req);
+Index idsToIndex(sqlite3 *db, std::vector<int> locids);
 #endif

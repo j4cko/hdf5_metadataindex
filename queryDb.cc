@@ -1,13 +1,27 @@
 #include "attributes.h"
 #include "sqliteHelpers.h"
 #include <iostream>
+#include <sstream>
+#include <json/json.h>
 
 Request queryToRequest(std::string const & query) {
   Request req;
-  req.push_back(Attribute("px", 0));
-  req.push_back(Attribute("py", 0));
-  req.push_back(Attribute("pz", 0));
-  req.push_back(Attribute("hpe", 1));
+  std::stringstream sstr;
+  sstr << query;
+  Json::Value root;
+  sstr >> root;
+
+  auto names = root.getMemberNames();
+  for( auto name : names ) {
+    if( root[name].isDouble() ) 
+      req.push_back(Attribute(name, root[name].asDouble()));
+    else if( root[name].isInt() )
+      req.push_back(Attribute(name, root[name].asInt()));
+    else if( root[name].isBool() )
+      req.push_back(Attribute(name, root[name].asBool()));
+    else if( root[name].isString() )
+      req.push_back(Attribute(name, root[name].asString()));
+  }
   return req;
 }
 int main(int argc, char** argv) {
@@ -21,10 +35,17 @@ int main(int argc, char** argv) {
 
   Request req = queryToRequest(query);
 
+  for( auto & attr : req )
+    std::cout << "- " << attr.getName() << ": " << attr.getValue() << std::endl;
+
   sqlite3 *db;
   sqlite3_open(dbfile.c_str(), &db);
 
-  Index idx = queryDb(db, req);
+  /*auto names = getFilelocations(db, req);
+  for( auto name : names ) { std::cout << name << std::endl; }
+  */
+  auto ids = getLocIds(db, req);
+  Index idx = idsToIndex(db, ids);
 
   sqlite3_close(db);
 

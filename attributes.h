@@ -6,8 +6,6 @@
 #include <stdexcept>
 #include <cassert>
 #include <ostream>
-template<typename T>
-void print(T & val, std::ostream& os) { os << val; };
 class Value {
 public:
   template <typename T>
@@ -75,9 +73,11 @@ class Attribute {
     Value val;
     Type type;
 };
+
+Attribute attributeFromStrings(std::string const & name, std::string const & valstr, 
+        std::string const & typestr);
+
 typedef std::vector<std::pair<std::vector<Attribute>,std::string>> Index;
 
 Index indexFile(std::string filename);
-
-void printIndex(Index const & idx, std::ostream& os);
 #endif

@@ -17,7 +17,7 @@ indexHdf5: indexer.o $(DEPS_INDEXER)
 	$(CXX) -o $@ $(CXXFLAGS) -lhdf5 -lsqlite3 $< $(OBJS_INDEXER)
 
 queryDb: queryDb.o $(DEPS_QUERY)
-	$(CXX) -o $@ $(CXXFLAGS) -lhdf5 -lsqlite3 $< $(OBJS_QUERY)
+	$(CXX) -o $@ $(CXXFLAGS) -lhdf5 -lsqlite3 -ljsoncpp $< $(OBJS_QUERY)
 
 clean:
 	rm -vf *~ *.o $(PROGS)

@@ -84,7 +84,8 @@ void printIndex(Index const & idx, std::ostream& os) {
       " has the following attributes:" << std::endl;
     for ( auto attr : dataset.first ) {
       os << "  - " << attr.getName() 
-        << " (" << typeToString(attr.getType()) << ")" << std::endl;
+        << " (" << typeToString(attr.getType()) << ") = "
+        << attr.getValue() << std::endl;
     }
   }
 }
