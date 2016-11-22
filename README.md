@@ -53,12 +53,18 @@ The matching of attributes could be weakened by additional keywords:
     is set to `1`.
   * `"attr": {"min": 1, "max": 2}` would match any node with an attribute named 
     `attr` with a numeric value between `1` and `2`.
+  * `"attr": {"min": 1}` would match any node larger or equal 1, similarly does
+    `"attr": {"max": 3}` match all nodes with `attr` smaller or equal 3.
   * `"attr": {"or": 1, "or": 2, "or": 3}` matches either `1`, `2` or `3`.
-  * `"attr": {"present"}` matches any node which has the attribute `attr`
-    (irrespective of its value)
-  * `"attr": {"smallest"}` and `"attr": {"largest"}` matches all nodes that have
+  * `"attr": {"present": true}` matches any node which has the attribute `attr`
+    (irrespective of its value). If set to `false`, it doesn't match any node
+    which has this attribute set.
+  * `"attr": {"smallest": true}` and `"attr": {"largest": true}` matches all nodes that have
     the attribute `attr` set to the smallest or largest value (compared to all
-    other nodes which hold this attribute).
+    other nodes which hold this attribute). The values `true` are required.
+
+Note the enclosing braces: This is needed to distinguish the attribute from a
+string.
 
 #### Lua ####
 
@@ -71,9 +77,6 @@ Assume we have three nodes:
 ```
 {
   "attributes": {"x": {"from": 2, "to": 3}, "y": "smallest", "z": 3, "t": 2},
-  "parent": { "name": "parentnode", 
-              "attributes": [left-out], 
-              "parent": [left-out] },
   "name": "targetnode1"
 }
 {
@@ -82,9 +85,6 @@ Assume we have three nodes:
 }
 {
   "attributes": {"x": 3, "y": 3 "z": 3, "t": 5},
-  "parent": { "name": "parentnode", 
-              "attributes": [left-out], 
-              "parent": [left-out] },
   "name": "targetnode3"
 }
 ```
