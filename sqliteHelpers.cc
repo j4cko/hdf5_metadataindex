@@ -86,3 +86,30 @@ void insertDataset(sqlite3 *db,
     throw std::runtime_error(errstr.str());
   }
 }
+// find all with 250 smearing iterations:
+// select locname from filelocations where locid in (select locid from attrvalues where value="250" and attrid=(select attrid from attributes where attrname="smeariter"));
+//
+// find all with 250 smeariter and 3 hpe:
+// select locname from filelocations where locid in (select locid from attrvalues where value="3" and attrid=(select attrid from attributes where attrname="hpe")) and locid in (select locid from attrvalues where value="250" and attrid=(select attrid from attributes where attrname="smeariter"))
+
+Index queryDb(sqlite3 *db, Request const & req) {
+  Index res;
+  //build sql query:
+  std::stringstream sstr;
+  sstr << "select locname from filelocations where locid in ";
+  for( auto i = 0u; i < req.size(); ++i ){
+    sstr << "(select locid from attrvalues where value=\"" << req[i].getValue() << "\" and attrid=(select attrid from attributes where attrname=\"" << req[i].getName() << "\"))";
+    if( i < req.size() - 1 ) sstr << " and locid in ";
+  }
+  sstr << ";";
+  std::cout << "DEBUG REQUEST: " << sstr.str() << std::endl;
+  char *zErrMsg = nullptr;
+  int rc = sqlite3_exec( db,
+      sstr.str().c_str(), callback, 0, &zErrMsg );
+  if( rc != SQLITE_OK ) {
+    std::stringstream errstr;
+    errstr << "SQL error: " << zErrMsg;
+    throw std::runtime_error(errstr.str());
+  }
+  return res;
+}
