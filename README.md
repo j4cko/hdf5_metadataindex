@@ -88,7 +88,7 @@ specifiers. It gets the specifications of the node as tables.
 Assume we have three nodes:
 ```
 {
-  "attributes": {"x": {"from": 2, "to": 3}, "y": "smallest", "z": 3, "t": 2},
+  "attributes": {"x": 2, "y": 2, "z": 3, "t": 2},
   "name": "targetnode1"
 }
 {

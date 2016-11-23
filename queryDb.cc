@@ -1,4 +1,5 @@
 #include "attributes.h"
+#include "conditions.h"
 #include "sqliteHelpers.h"
 #include <iostream>
 #include <sstream>
@@ -14,13 +15,13 @@ Request queryToRequest(std::string const & query) {
   auto names = root.getMemberNames();
   for( auto name : names ) {
     if( root[name].isDouble() ) 
-      req.push_back(Attribute(name, root[name].asDouble()));
+      req.push_back(AttributeRequest(name, Equals(root[name].asDouble())));
     else if( root[name].isInt() )
-      req.push_back(Attribute(name, root[name].asInt()));
+      req.push_back(AttributeRequest(name, Equals(root[name].asInt())));
     else if( root[name].isBool() )
-      req.push_back(Attribute(name, root[name].asBool()));
+      req.push_back(AttributeRequest(name, Equals(root[name].asBool())));
     else if( root[name].isString() )
-      req.push_back(Attribute(name, root[name].asString()));
+      req.push_back(AttributeRequest(name, Equals(root[name].asString())));
   }
   return req;
 }
@@ -34,9 +35,6 @@ int main(int argc, char** argv) {
   const std::string query(argv[2]);
 
   Request req = queryToRequest(query);
-
-  for( auto & attr : req )
-    std::cout << "- " << attr.getName() << ": " << attr.getValue() << std::endl;
 
   sqlite3 *db;
   sqlite3_open(dbfile.c_str(), &db);

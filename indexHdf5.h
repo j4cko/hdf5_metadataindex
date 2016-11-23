@@ -4,7 +4,7 @@
 #include <string>
 #include "attributes.h"
 
-typedef std::vector<Attribute> Request;
+typedef std::vector<AttributeRequest> Request;
 typedef std::pair<std::vector<Attribute>,std::string> DatasetSpec;
 typedef std::vector<DatasetSpec> Index;
 

@@ -6,18 +6,24 @@
 int main(int argc, char** argv) {
   //TODO: make tests out of this:
   Value bla(0);
-  std::cout << (int)bla << std::endl;
+  std::cout << bla << std::endl;
   bla = 5;
-  std::cout << (int)bla << std::endl;
+  std::cout << bla << std::endl;
   bla = (int)bla + 3;
-  std::cout << (int)bla << std::endl;
+  std::cout << bla << std::endl;
+
+  if( bla == 8 ) std::cout << " bla == 8 (ok) " << std::endl;
+  else           std::cout << " bla != 8 (?) " << std::endl;
 
   Attribute attr("exampleattr", 5);
-  std::cout << typeToString(attr.getType()) << std::endl;
+  std::cout << typeToString(attr.getType()) << ": " << attr.getValue() << std::endl;
+
   Attribute attr2("exampleattr2", 6.432);
-  std::cout << typeToString(attr2.getType()) << (double) attr2.getValue() << std::endl;
+  std::cout << typeToString(attr2.getType()) << ": " << attr2.getValue() << std::endl;
+
+  std::cout << typeToString(attr2.getType()) << std::endl;
   Index testind;
-  testind.push_back({{attr, attr2}, "testpath"});
+  testind.push_back({{attr2}, "testpath"});
   printIndex(testind, std::cout);
 
 

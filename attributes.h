@@ -23,7 +23,7 @@ public:
   Value(T const &content_) : content(new Model<T>(content_)), 
                              type(typeFromTypeid(typeid(T))) {}
   ~Value() { delete content; }
-  Value(Value const &rr) : content(rr.content->clone()) {}
+  Value(Value const &rr) : content(rr.content->clone()), type(rr.getType()) {}
   Value &operator=(Value rr) {
     if (content->ti.hash_code() != rr.content->ti.hash_code())
       throw std::runtime_error("Assigning Values of different types!");
@@ -45,6 +45,13 @@ public:
     val.content->print(os);
     return os;
   }
+  friend bool operator==(Value const & a, Value const & b) {
+    if( a.getType() != b.getType() ) return false;
+    return a.content->equals(b.content);
+  }
+  friend bool operator!=(Value const & a, Value const &b) {
+    return (not a == b);
+  }
 private:
   struct Concept {
     virtual ~Concept() {}
@@ -52,12 +59,18 @@ private:
     Concept(std::type_info const &ti_) : ti(ti_) {}
     virtual Concept *clone() const = 0;
     virtual void print(std::ostream& os) const = 0;
+    virtual bool equals(Concept const * other) const = 0;
     std::type_info const &ti;
   };
 
   template <typename T> struct Model : Concept {
     Model(T const &value) : Concept(typeid(T)), object(value) {}
     void print(std::ostream& os) const { os << object; }
+    bool equals(Concept const * other) const {
+      if( other->ti != ti ) return false;
+      //now, a cast is safe:
+      return (object == static_cast<Model<T> const*>(other)->object);
+    }
     Concept *clone() const { return new Model(object); }
     T object;
   };
@@ -84,6 +97,9 @@ class Condition {
   public:
     virtual bool matches(Attribute const & attr, std::string const & reqname) const = 0;
     virtual std::unique_ptr<Condition> clone() const = 0;
+    //TODO: further abstraction for cases that do not rely on SQL?
+    virtual std::string getSqlValueDescription() const = 0;
+    virtual std::string getSqlKeyDescription(std::string const & name) const = 0;
 };
 
 class AttributeRequest {
@@ -92,6 +108,10 @@ class AttributeRequest {
       reqname(name), cond(std::move(in.clone())) {}
     bool matches(Attribute const & attr) const { return cond->matches(attr, reqname); }
     std::string getName() const { return reqname; }
+    std::string getSqlKeyDescription() const { 
+      return cond->getSqlKeyDescription(reqname); }
+    std::string getSqlValueDescription() const { 
+      return cond->getSqlValueDescription(); }
   private:
     std::string reqname;
     std::unique_ptr<Condition> cond;

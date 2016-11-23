@@ -1,11 +1,12 @@
 #include "attributes.h"
+#include <iostream>
 #include <sstream>
 std::string typeToString(Type const & type) {
   switch(type) {
     case Type::NUMERIC: return "numeric";
     case Type::BOOLEAN: return "bool";
     case Type::STRING:  return "string";
-    default: throw std::runtime_error("typeToString: unknown / unimplemented type.");
+    default: throw std::runtime_error("typeToString: unknown / unimplemented type. (may be used uninitialized?)");
   }
 }
 Type typeFromTypeid(std::type_info const & tinfo) {
@@ -20,7 +21,7 @@ Type typeFromString(std::string const & typestr) {
   if( typestr == "numeric" )                return Type::NUMERIC;
   else if( typestr == "bool" )              return Type::BOOLEAN;
   else if( typestr == "string" )            return Type::STRING;
-  else throw std::runtime_error("typeFromString: unknow type.");
+  else throw std::runtime_error("typeFromString: unknown type.");
 }
 Attribute attributeFromStrings(std::string const & name, std::string const & valstr, 
         std::string const & typestr) {

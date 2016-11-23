@@ -128,10 +128,14 @@ std::vector<int> getLocIds(sqlite3 *db, Request const & req) {
   std::stringstream sstr;
   sstr << "select locid from filelocations where locid in ";
   for( auto i = 0u; i < req.size(); ++i ){
-    sstr << "(select locid from attrvalues where value=\"" << req[i].getValue() << "\" and attrid=(select attrid from attributes where attrname=\"" << req[i].getName() << "\"))";
+    sstr << "(select locid from attrvalues where value " << 
+      req[i].getSqlValueDescription() << 
+      " and attrid=(select attrid from attributes where attrname " << 
+      req[i].getSqlKeyDescription() << "))";
     if( i < req.size() - 1 ) sstr << " and locid in ";
   }
   sstr << ";";
+  std::cout << "DEBUG: request = " << sstr.str() << std::endl;
   char *zErrMsg = nullptr;
   int rc = sqlite3_exec( db,
       sstr.str().c_str(), insertIntCallback, &res, &zErrMsg );
