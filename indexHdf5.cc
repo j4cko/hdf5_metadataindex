@@ -43,8 +43,8 @@ herr_t h5_attr_iterate( hid_t o_id, const char *name, const H5A_info_t *attrinfo
       H5Aclose(attr_id);
       return res; }
     else {
-      delete[] buf;
       attrs->push_back(Attribute(name, std::string(buf)));
+      delete[] buf;
     }
   } else {
     H5Tclose(dtype);
