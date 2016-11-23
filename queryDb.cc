@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include "jsonToValue.h"
+#include "h5helpers.h"
 
 int main(int argc, char** argv) {
   if( argc != 3 ) {
@@ -26,10 +27,22 @@ int main(int argc, char** argv) {
   Index idx = idsToIndex(db, ids);
 
   auto res = idsToDsetnames(db, ids);
-  sqlite3_close(db);
+  auto files = idsToFilenames(db, ids);
 
+  for( auto file : files ) std::cout << file << std::endl;
   printIndex(idx, std::cout);
-  for( auto name : res ) { std::cout << name << std::endl; }
+  assert(res.size() == files.size());
+  for( auto i = 0u; i < res.size(); ++i) {
+    std::cout << res[i] << " " << files[i] << std::endl; }
+
+  //check one of the files for mtime:
+  auto mtime = H5DataHelpers::getFileModificationTime(files.back());
+  auto mtimeDb = getFileModificationTime(db, files.back());
+  if( mtime - mtimeDb > 0 )
+    std::cerr << "file \"" << files.back() << "\" has changed since db creation." << std::endl;
+  else
+    std::cout << "file \"" << files.back() << "\" probably in sync with db." << std::endl;
+  sqlite3_close(db);
 
   return 0;
 }

@@ -188,7 +188,8 @@ std::vector<int> getLocIds(sqlite3 *db, Request const & req) {
   }
   return res;
 }
-std::vector<std::string> idsToDsetnames(sqlite3 *db, std::vector<int> locids) {
+std::vector<std::string> idsToDsetnames(sqlite3 *db,
+    std::vector<int> const & locids) {
   std::vector<std::string> res;
   std::stringstream sstr;
   if( locids.size() < 1 ) return res;
@@ -198,6 +199,39 @@ std::vector<std::string> idsToDsetnames(sqlite3 *db, std::vector<int> locids) {
   char *zErrMsg = nullptr;
   int rc = sqlite3_exec( db, 
       sstr.str().c_str(), insertStringCallback, &res, &zErrMsg );
+  if( rc != SQLITE_OK ) {
+    std::stringstream errstr;
+    errstr << "SQL error: " << zErrMsg;
+    throw std::runtime_error(errstr.str());
+  }
+  return res;
+}
+int getFileModificationTime(sqlite3 *db, std::string filename) {
+  int mtimeDb = 0;
+  std::stringstream sstr;
+  sstr << "select mtime from files where fname=\"" << filename << "\";";
+  char *zErrMsg = nullptr;
+  int rc = sqlite3_exec( db, 
+      sstr.str().c_str(), getIntCallback, &mtimeDb, &zErrMsg );
+  if( rc != SQLITE_OK ) {
+    std::stringstream errstr;
+    errstr << "SQL error: " << zErrMsg;
+    throw std::runtime_error(errstr.str());
+  }
+  return mtimeDb;
+}
+std::vector<std::string> idsToFilenames(sqlite3 *db,
+    std::vector<int> const & locids) {
+  std::vector<std::string> res;
+  std::stringstream sstr;
+  //select * from files where fileid=(select fileid from filelocations where locid=5);
+  if( locids.size() < 1 ) return res;
+  for( auto const & locid : locids ) {
+    sstr << "select fname from files where fileid=(select fileid from filelocations where locid=" << locid << ");";
+  }
+  char *zErrMsg = nullptr;
+  int rc = sqlite3_exec( db, 
+    sstr.str().c_str(), insertStringCallback, &res, &zErrMsg );
   if( rc != SQLITE_OK ) {
     std::stringstream errstr;
     errstr << "SQL error: " << zErrMsg;
