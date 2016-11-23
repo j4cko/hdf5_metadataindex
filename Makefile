@@ -2,7 +2,7 @@ CXXFLAGS:= -g -std=c++11 -Wall
 HDRS_INDEXER:= attributes.h indexHdf5.h h5helpers.h sqliteHelpers.h
 OBJS_INDEXER:= attributes.o indexHdf5.o sqliteHelpers.cc
 DEPS_INDEXER:= $(HDRS_INDEXER) $(OBJS_INDEXER)
-HDRS_QUERY:= attributes.h indexHdf5.h sqliteHelpers.h
+HDRS_QUERY:= attributes.h indexHdf5.h sqliteHelpers.h conditions.h jsonToValue.h
 OBJS_QUERY:= attributes.o indexHdf5.o sqliteHelpers.cc
 DEPS_QUERY:= $(HDRS_QUERY) $(OBJS_QUERY)
 

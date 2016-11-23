@@ -3,28 +3,8 @@
 #include "sqliteHelpers.h"
 #include <iostream>
 #include <sstream>
-#include <json/json.h>
+#include "jsonToValue.h"
 
-Request queryToRequest(std::string const & query) {
-  Request req;
-  std::stringstream sstr;
-  sstr << query;
-  Json::Value root;
-  sstr >> root;
-
-  auto names = root.getMemberNames();
-  for( auto name : names ) {
-    if( root[name].isDouble() ) 
-      req.push_back(AttributeRequest(name, Equals(root[name].asDouble())));
-    else if( root[name].isInt() )
-      req.push_back(AttributeRequest(name, Equals(root[name].asInt())));
-    else if( root[name].isBool() )
-      req.push_back(AttributeRequest(name, Equals(root[name].asBool())));
-    else if( root[name].isString() )
-      req.push_back(AttributeRequest(name, Equals(root[name].asString())));
-  }
-  return req;
-}
 int main(int argc, char** argv) {
   if( argc != 3 ) {
     std::cerr << "wrong number of args." << std::endl; 

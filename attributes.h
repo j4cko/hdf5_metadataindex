@@ -52,6 +52,26 @@ public:
   friend bool operator!=(Value const & a, Value const &b) {
     return (not a == b);
   }
+  friend bool operator<(Value const & a, Value const & b) {
+    if( a.getType() != b.getType() ) 
+      throw std::runtime_error("operator<: comparing Values of different type.");
+    return a.content->less(b.content);
+  }
+  friend bool operator<=(Value const & a, Value const & b) {
+    if( a.getType() != b.getType() ) 
+      throw std::runtime_error("operator<: comparing Values of different type.");
+    return a.content->lessEqual(b.content);
+  }
+  friend bool operator>(Value const & a, Value const & b) {
+    if( a.getType() != b.getType() ) 
+      throw std::runtime_error("operator<: comparing Values of different type.");
+    return a.content->greater(b.content);
+  }
+  friend bool operator>=(Value const & a, Value const & b) {
+    if( a.getType() != b.getType() ) 
+      throw std::runtime_error("operator<: comparing Values of different type.");
+    return a.content->greaterEqual(b.content);
+  }
 private:
   struct Concept {
     virtual ~Concept() {}
@@ -60,6 +80,10 @@ private:
     virtual Concept *clone() const = 0;
     virtual void print(std::ostream& os) const = 0;
     virtual bool equals(Concept const * other) const = 0;
+    virtual bool less(Concept const * other) const = 0;
+    virtual bool lessEqual(Concept const * other) const = 0;
+    virtual bool greater(Concept const * other) const = 0;
+    virtual bool greaterEqual(Concept const * other) const = 0;
     std::type_info const &ti;
   };
 
@@ -70,6 +94,26 @@ private:
       if( other->ti != ti ) return false;
       //now, a cast is safe:
       return (object == static_cast<Model<T> const*>(other)->object);
+    }
+    bool less(Concept const * other) const {
+      if( other->ti != ti ) return false;
+      //now, a cast is safe:
+      return (object < static_cast<Model<T> const*>(other)->object);
+    }
+    bool lessEqual(Concept const * other) const {
+      if( other->ti != ti ) return false;
+      //now, a cast is safe:
+      return (object <= static_cast<Model<T> const*>(other)->object);
+    }
+    bool greater(Concept const * other) const {
+      if( other->ti != ti ) return false;
+      //now, a cast is safe:
+      return (object > static_cast<Model<T> const*>(other)->object);
+    }
+    bool greaterEqual(Concept const * other) const {
+      if( other->ti != ti ) return false;
+      //now, a cast is safe:
+      return (object >= static_cast<Model<T> const*>(other)->object);
     }
     Concept *clone() const { return new Model(object); }
     T object;
@@ -98,8 +142,8 @@ class Condition {
     virtual bool matches(Attribute const & attr, std::string const & reqname) const = 0;
     virtual std::unique_ptr<Condition> clone() const = 0;
     //TODO: further abstraction for cases that do not rely on SQL?
-    virtual std::string getSqlValueDescription() const = 0;
-    virtual std::string getSqlKeyDescription(std::string const & name) const = 0;
+    virtual std::string getSqlValueDescription(std::string const & valentryname) const = 0;
+    virtual std::string getSqlKeyDescription(std::string const & keyentryname, std::string const & name) const = 0;
 };
 
 class AttributeRequest {
@@ -108,10 +152,10 @@ class AttributeRequest {
       reqname(name), cond(std::move(in.clone())) {}
     bool matches(Attribute const & attr) const { return cond->matches(attr, reqname); }
     std::string getName() const { return reqname; }
-    std::string getSqlKeyDescription() const { 
-      return cond->getSqlKeyDescription(reqname); }
-    std::string getSqlValueDescription() const { 
-      return cond->getSqlValueDescription(); }
+    std::string getSqlKeyDescription(std::string const & keyentryname) const { 
+      return cond->getSqlKeyDescription(keyentryname, reqname); }
+    std::string getSqlValueDescription(std::string const & valentryname) const { 
+      return cond->getSqlValueDescription(valentryname); }
   private:
     std::string reqname;
     std::unique_ptr<Condition> cond;
