@@ -82,7 +82,7 @@ class Attribute {
 
 class Condition {
   public:
-    virtual bool matches(Attribute const & attr) = 0;
+    virtual bool matches(Attribute const & attr, std::string const & reqname) const = 0;
     virtual std::unique_ptr<Condition> clone() const = 0;
 };
 
@@ -90,7 +90,7 @@ class AttributeRequest {
   public:
     AttributeRequest(std::string const & name, Condition const & in) :
       reqname(name), cond(std::move(in.clone())) {}
-    bool matches(Attribute const & attr) const;
+    bool matches(Attribute const & attr) const { return cond->matches(attr, reqname); }
     std::string getName() const { return reqname; }
   private:
     std::string reqname;
