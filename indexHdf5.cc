@@ -12,31 +12,46 @@ herr_t h5_attr_iterate( hid_t o_id, const char *name, const H5A_info_t *attrinfo
   H5T_class_t typeclass = H5Tget_class(dtype);
   hid_t memtype = -1;
   int intbuf; double floatbuf;
-  switch( typeclass ) {
-    case H5T_INTEGER:
-      memtype = H5Tcopy(H5T_NATIVE_INT);
-      H5Aread(attr_id, memtype, &intbuf);
-      H5Tclose(memtype);
+  herr_t res = 0;
+  if( typeclass == H5T_INTEGER ) {
+    memtype = H5Tcopy(H5T_NATIVE_INT);
+    res |= H5Aread(attr_id, memtype, &intbuf);
+    res |= H5Tclose(memtype);
+    if( res != 0 ) { 
+      H5Tclose(dtype);
+      H5Aclose(attr_id);
+      return res; }
+    else
       attrs->push_back(Attribute(name, (double)intbuf));
-      break;
-    case H5T_FLOAT:
-      memtype = H5Tcopy(/*H5T_IEEE_F64LE*/ H5T_NATIVE_DOUBLE);
-      H5Aread(attr_id, memtype, &floatbuf);
-      H5Tclose(memtype);
-      attrs->push_back(Attribute(name, floatbuf));
-      break;
-    case H5T_STRING:
-      //should not throw from here.... therefore:
+  } else if ( typeclass == H5T_FLOAT ) {
+    memtype = H5Tcopy(/*H5T_IEEE_F64LE*/ H5T_NATIVE_DOUBLE);
+    res |= H5Aread(attr_id, memtype, &floatbuf);
+    res |= H5Tclose(memtype);
+    if( res != 0 ) { 
       H5Tclose(dtype);
       H5Aclose(attr_id);
-      return -1;
-      break;
-    default:
+      return res; }
+    else
+    attrs->push_back(Attribute(name, floatbuf));
+  } else if ( typeclass == H5T_STRING ) {
+    auto size = H5Tget_size(dtype);
+    char* buf = new char[size*sizeof(char)];
+    res = H5Aread(attr_id, dtype, buf);
+    if( res != 0 ) { 
+      delete[] buf;
       H5Tclose(dtype);
       H5Aclose(attr_id);
-      return -2;
+      return res; }
+    else {
+      delete[] buf;
+      attrs->push_back(Attribute(name, std::string(buf)));
+    }
+  } else {
+    H5Tclose(dtype);
+    H5Aclose(attr_id);
+    return -2;
   }
-  herr_t res = H5Tclose(dtype);
+  res = H5Tclose(dtype);
   res &= H5Aclose(attr_id);
   return 0;
 }
@@ -122,8 +137,7 @@ Index indexFile(std::string filename) {
   H5Fclose(file_id);
 
   //turning some c into c++ errors:
-  if( visitres == -1 ) throw std::runtime_error("strings are not implemented.");
-  else if( visitres == -2 ) throw std::runtime_error("unimplemented datatype.");
+  if( visitres == -2 ) throw std::runtime_error("unimplemented datatype.");
   else if( visitres == -3 ) throw std::runtime_error("cannot open object.");
   else if( visitres < 0 )throw std::runtime_error("other unknown error during"
                                                   "traversal of the file.");
