@@ -58,7 +58,7 @@ void prepareSqliteFile(sqlite3 *db) {
    * id | attrId | value | locId
    */
   char *zErrMsg = nullptr;
-  int rc = sqlite3_exec( db,
+  std::string request(
       "create table attributes("
         "attrid integer primary key asc,"
         "attrname text unique,"
@@ -75,12 +75,13 @@ void prepareSqliteFile(sqlite3 *db) {
       "create table files("
         "fileid integer primary key asc,"
         "fname text,"
-        "mtime int);"
-      ,
+        "mtime int);" );
+  int rc = sqlite3_exec( db,
+      request.c_str(),
       printCallback, 0, &zErrMsg );
   if( rc != SQLITE_OK ) {
     std::stringstream errstr;
-    errstr << "SQL error: " << zErrMsg;
+    errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << request;
     throw std::runtime_error(errstr.str());
   } else { std::cout << "database created." << std::endl;}
 }
@@ -95,7 +96,7 @@ void insertDataset(sqlite3 *db,
       sstr.str().c_str(), printCallback, 0, &zErrMsg );
   if( rc != SQLITE_OK ) {
     std::stringstream errstr;
-    errstr << "SQL error: " << zErrMsg;
+    errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << sstr.str();
     throw std::runtime_error(errstr.str());
   }
   sstr.clear(); sstr.str("");
@@ -107,7 +108,7 @@ void insertDataset(sqlite3 *db,
       sstr.str().c_str(), getIntCallback, &fileid, &zErrMsg );
   if( rc != SQLITE_OK ) {
     std::stringstream errstr;
-    errstr << "SQL error: " << zErrMsg;
+    errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << sstr.str();
     throw std::runtime_error(errstr.str());
   }
   sstr.clear(); sstr.str("");
@@ -129,7 +130,7 @@ void insertDataset(sqlite3 *db,
       sstr.str().c_str(), printCallback, 0, &zErrMsg );
   if( rc != SQLITE_OK ) {
     std::stringstream errstr;
-    errstr << "SQL error: " << zErrMsg;
+    errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << sstr.str();
     throw std::runtime_error(errstr.str());
   }
   //connect attributes with locations:
@@ -139,8 +140,13 @@ void insertDataset(sqlite3 *db,
     for( auto attr : dset.first ){
       sstr <<
         "insert into attrvalues(attrid,locid,value) values(( select attrid from attributes where attrname=\"" <<
-        attr.getName() << "\"), (select locid from filelocations where locname=\"" << dset.second << "\"),\"" <<
-        attr.getValue() << "\");";
+        attr.getName() << "\"), (select locid from filelocations where locname=\"" << dset.second << "\"),";
+      if(attr.getType() == Type::STRING)
+        //TODO: need to "escape" single quotes? single quotes are escaped by
+        //single quotes..
+        sstr << "\'" << attr.getValue() << "\');";
+      else
+        sstr << attr.getValue() << ");";
     }
   }
   sstr << "commit transaction;";
@@ -148,7 +154,7 @@ void insertDataset(sqlite3 *db,
       sstr.str().c_str(), printCallback, 0, &zErrMsg );
   if( rc != SQLITE_OK ) {
     std::stringstream errstr;
-    errstr << "SQL error: " << zErrMsg;
+    errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << sstr.str();
     throw std::runtime_error(errstr.str());
   }
 }
@@ -183,7 +189,7 @@ std::vector<int> getLocIds(sqlite3 *db, Request const & req) {
       query.c_str(), insertIntCallback, &res, &zErrMsg );
   if( rc != SQLITE_OK ) {
     std::stringstream errstr;
-    errstr << "SQL error: " << zErrMsg;
+    errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << query;
     throw std::runtime_error(errstr.str());
   }
   return res;
@@ -201,7 +207,7 @@ std::vector<std::string> idsToDsetnames(sqlite3 *db,
       sstr.str().c_str(), insertStringCallback, &res, &zErrMsg );
   if( rc != SQLITE_OK ) {
     std::stringstream errstr;
-    errstr << "SQL error: " << zErrMsg;
+    errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << sstr.str();
     throw std::runtime_error(errstr.str());
   }
   return res;
@@ -215,7 +221,7 @@ int getFileModificationTime(sqlite3 *db, std::string filename) {
       sstr.str().c_str(), getIntCallback, &mtimeDb, &zErrMsg );
   if( rc != SQLITE_OK ) {
     std::stringstream errstr;
-    errstr << "SQL error: " << zErrMsg;
+    errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << sstr.str();
     throw std::runtime_error(errstr.str());
   }
   return mtimeDb;
@@ -234,7 +240,7 @@ std::vector<std::string> idsToFilenames(sqlite3 *db,
     sstr.str().c_str(), insertStringCallback, &res, &zErrMsg );
   if( rc != SQLITE_OK ) {
     std::stringstream errstr;
-    errstr << "SQL error: " << zErrMsg;
+    errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << sstr.str();
     throw std::runtime_error(errstr.str());
   }
   return res;
@@ -250,7 +256,7 @@ DatasetSpec idsToDatasetSpec(sqlite3 *db, int locid) {
       sstr.str().c_str(), getStringCallback, &(res.second), &zErrMsg );
   if( rc != SQLITE_OK ) {
     std::stringstream errstr;
-    errstr << "SQL error: " << zErrMsg;
+    errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << sstr.str();
     throw std::runtime_error(errstr.str());
   }
   // then get the attributes:
@@ -260,7 +266,7 @@ DatasetSpec idsToDatasetSpec(sqlite3 *db, int locid) {
       sstr.str().c_str(), insertAttributeCallback, &(res.first), &zErrMsg );
   if( rc != SQLITE_OK ) {
     std::stringstream errstr;
-    errstr << "SQL error: " << zErrMsg;
+    errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << sstr.str();
     throw std::runtime_error(errstr.str());
   }
   return res;
