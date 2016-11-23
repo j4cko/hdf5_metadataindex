@@ -17,6 +17,9 @@ Value jsonValueToValue(Json::Value const & json) {
   }
 }
 AttributeRequest parseRequest(Json::Value const & root, std::string const & name) {
+  if( root[name].size() != 0 ) {
+    throw std::runtime_error("parseRequest: lists / arrays are currently not supported.");
+  }
   if( isRepresentableAsValue(root[name]) )
     return AttributeRequest(name, Conditions::Equals(jsonValueToValue(root[name])));
   else if( root[name].isMember("min") and root[name].isMember("max") )
@@ -47,7 +50,6 @@ Request queryToRequest(std::string const & query) {
   sstr << query;
   Json::Value root;
   sstr >> root;
-
   auto names = root.getMemberNames();
   for( auto name : names )
     req.push_back(parseRequest(root, name));
