@@ -29,19 +29,35 @@ types and lists thereof.
 
 ### At the moment ###
 
-A request is a list of attributes with certain values. More than one
+A request is a list of AttributeRequests with certain conditions. More than one
 dataset can match a request. Datasets can have attributes that are not 
-part of the request.
+part of the request (for which no corresponding AttributeRequest exists).
 
 In other words: A dataset matching a request has all the attributes
-of the request set to the same values as in the request. It may have
-additional attributes, but all attributes in the request are set 
+of the request set to a value for which the AttributeRequest returns true.
+It may have additional attributes, but all attributes in the request are set 
 and have the right value.
 
 *Wildcarding* is naturally done by not specifying the attribute in the
 request.
 
-### Future / Proposal ###
+Currently, possible attribute requests are:
+
+  * `{"attrname": 3}` checks if the attribute named `attrname` is set to 3.
+  * `{"attrname": {"min": 2}}` checks if the attribute `attrname` is set to a
+    value larger or equal to 2.
+  * `{"attrname": {"max": 2}}` checks if the attribute `attrname` is set to a
+    value smaller or equal to 2.
+  * `{"attrname": {"min": 1, "max": 3}}` checks if the attribute `attrname` is 
+    set to a value between 1 and 3 (boundaries included).
+  * `{"attrname": {"or": [1,2,3]}}` check if the attribute `attrname` is set to 
+    one of the values 1, 2 or 3.
+  * `{"attrname": {"present": true}}` check if the attribute `attrname` is
+    present and set to any value. Note that the reverse, 
+    `{"attrname": {"present": false}}` which would check for the absence of an
+    attribute, is currently not implemented.
+
+### Future ###
 
 In JSON, a request could look like this:
 ```
@@ -56,27 +72,15 @@ attributes of the request set to the values specified in the request.
 The additional (optional) `name` tag is a regex that must match the name of the
 node.
 
-#### Attribute keywords ####
+#### Additional attribute requests ####
 
-Attributes set to a fixed value must match exactly.
-The matching of attributes could be weakened by additional keywords:
+In addition to the above requests, one could also have:
 
-  * `"attr": 1` matches only nodes that have a attributes named `attr` which 
-    is set to `1`.
-  * `"attr": {"min": 1, "max": 2}` would match any node with an attribute named 
-    `attr` with a numeric value between `1` and `2`.
-  * `"attr": {"min": 1}` would match any node larger or equal 1, similarly does
-    `"attr": {"max": 3}` match all nodes with `attr` smaller or equal 3.
-  * `"attr": {"or": 1, "or": 2, "or": 3}` matches either `1`, `2` or `3`.
-  * `"attr": {"present": true}` matches any node which has the attribute `attr`
-    (irrespective of its value). If set to `false`, it doesn't match any node
-    which has this attribute set.
+  * `"attr": {"present": false }` matches any node which does **not** have the 
+    attribute `attr`.
   * `"attr": {"smallest": true}` and `"attr": {"largest": true}` matches all nodes that have
     the attribute `attr` set to the smallest or largest value (compared to all
     other nodes which hold this attribute). The values `true` are required.
-
-Note the enclosing braces: This is needed to distinguish the attribute from a
-string.
 
 #### Lua ####
 
