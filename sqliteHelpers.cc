@@ -20,6 +20,12 @@ static int getStringCallback(void *str, int argc, char** argv, char** azColName)
   *((std::string*)str) = std::string(argv[0]);
   return 0;
 }
+static int getIntCallback(void *intvar, int argc, char** argv, char** azColName) {
+  if( argc != 1) { return -1;}
+  std::stringstream sstr(argv[0]);
+  sstr >> *((int*)intvar);
+  return 0;
+}
 static int printCallback(void *NotUsed, int argc, char** argv, char** azColName){
   for(int i = 0; i < argc; i++){
     std::cout << azColName[i] << " = " << (argv[i] ? argv[i] : "NULL") << std::endl;
@@ -54,17 +60,23 @@ void prepareSqliteFile(sqlite3 *db) {
   char *zErrMsg = nullptr;
   int rc = sqlite3_exec( db,
       "create table attributes("
-      "attrid integer primary key asc,"
-      "attrname text unique,"
-      "type   text);"
+        "attrid integer primary key asc,"
+        "attrname text unique,"
+        "type   text);"
       "create table filelocations("
-      "locid  integer primary key asc,"
-      "locname text);"
+        "locid  integer primary key asc,"
+        "locname text,"
+        "fileid integer);"
       "create table attrvalues("
-      "valueid  integer primary key asc,"
-      "attrid int,"
-      "locid  int,"
-      "value  blob);",
+        "valueid  integer primary key asc,"
+        "attrid int,"
+        "locid  int,"
+        "value  blob);"
+      "create table files("
+        "fileid integer primary key asc,"
+        "fname text,"
+        "mtime int);"
+      ,
       printCallback, 0, &zErrMsg );
   if( rc != SQLITE_OK ) {
     std::stringstream errstr;
@@ -73,14 +85,38 @@ void prepareSqliteFile(sqlite3 *db) {
   } else { std::cout << "database created." << std::endl;}
 }
 void insertDataset(sqlite3 *db, 
-                   Index const & idx ){
+                   Index const & idx, std::string const & file, unsigned int mtime){
   char *zErrMsg = nullptr;
   std::stringstream sstr;
+  //insert file:
+  sstr << "insert into files(fname, mtime) values(\"" << file << "\", "
+                                                      << mtime << ");";
+  int rc = sqlite3_exec( db,
+      sstr.str().c_str(), printCallback, 0, &zErrMsg );
+  if( rc != SQLITE_OK ) {
+    std::stringstream errstr;
+    errstr << "SQL error: " << zErrMsg;
+    throw std::runtime_error(errstr.str());
+  }
+  sstr.clear(); sstr.str("");
+  //retrieve the fileid:
+  int fileid = -1;
+  sstr << "select fileid from files where fname = \"" << file << "\" "
+       << "and mtime = " << mtime << ";";
+  rc = sqlite3_exec( db,
+      sstr.str().c_str(), getIntCallback, &fileid, &zErrMsg );
+  if( rc != SQLITE_OK ) {
+    std::stringstream errstr;
+    errstr << "SQL error: " << zErrMsg;
+    throw std::runtime_error(errstr.str());
+  }
+  sstr.clear(); sstr.str("");
   //insert attributes and filelocations:
   sstr << "begin transaction;";
   for( auto dset : idx ){
     sstr << 
-      "insert into filelocations(locname) values(\"" << dset.second << "\");";
+      "insert into filelocations(locname,fileid) values(\"" << dset.second << 
+      "\"," << fileid << ");";
     for( auto attr : dset.first ){
       // TODO: should find another sol than ignore..
       sstr <<
@@ -89,7 +125,7 @@ void insertDataset(sqlite3 *db,
     }
   }
   sstr << "commit transaction;";
-  int rc = sqlite3_exec( db,
+  rc = sqlite3_exec( db,
       sstr.str().c_str(), printCallback, 0, &zErrMsg );
   if( rc != SQLITE_OK ) {
     std::stringstream errstr;

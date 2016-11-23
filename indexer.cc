@@ -1,6 +1,7 @@
 #include "attributes.h"
 #include "indexHdf5.h"
 #include "sqliteHelpers.h"
+#include "h5helpers.h"
 
 #include <iostream>
 int main(int argc, char** argv) {
@@ -33,13 +34,15 @@ int main(int argc, char** argv) {
   const std::string h5file(argv[1]);
   const std::string sqlfile(argv[2]);
 
+  int mtime = H5DataHelpers::getFileModificationTime(h5file);
+
   sqlite3 *db;
   sqlite3_open(sqlfile.c_str(), &db);
   prepareSqliteFile(db);
 
   Index idx = indexFile(h5file);
 
-  insertDataset(db, idx);
+  insertDataset(db, idx, h5file, mtime);
 
   sqlite3_close(db);
   
