@@ -7,35 +7,52 @@
 #include <sstream>
 herr_t h5_attr_iterate( hid_t o_id, const char *name, const H5A_info_t *attrinfo, void *opdata) {
   std::vector<Attribute>* attrs = (std::vector<Attribute>*)opdata;
+  herr_t res = 0;
   hid_t attr_id = H5Aopen(o_id, name, H5P_DEFAULT);
   hid_t dtype = H5Aget_type(attr_id);
+  hid_t dspace = H5Aget_space(attr_id); //NEED TO CLOSE!
+  int rank = H5Sget_simple_extent_ndims(dspace);
+  int npts = H5Sget_simple_extent_npoints(dspace);
+  res = H5Sclose(dspace);
+  if( rank > 1 ) return -1; // no multidimensional arrays implemented...
+  if( res < 0 ) { H5Tclose(dtype); H5Aclose(attr_id); return res; }
   H5T_class_t typeclass = H5Tget_class(dtype);
-  hid_t memtype = -1;
-  int intbuf; double floatbuf;
-  herr_t res = 0;
+  std::stringstream sstr;
   if( typeclass == H5T_INTEGER ) {
-    memtype = H5Tcopy(H5T_NATIVE_INT);
-    res |= H5Aread(attr_id, memtype, &intbuf);
-    res |= H5Tclose(memtype);
+    int* intbuf = new int[npts];
+    res |= H5Aread(attr_id, dtype, intbuf);
     if( res != 0 ) { 
       H5Tclose(dtype);
       H5Aclose(attr_id);
       return res; }
-    else
-      attrs->push_back(Attribute(name, (double)intbuf));
+    else {
+      for( auto i = 0; i < npts; i++) {
+        sstr.clear(); sstr.str("");
+        if( npts > 1 )
+          sstr << name << "[" << i << "]";
+        else sstr << name;
+        attrs->push_back(Attribute(sstr.str(), (double)intbuf[i]));
+      }
+    }
   } else if ( typeclass == H5T_FLOAT ) {
-    memtype = H5Tcopy(/*H5T_IEEE_F64LE*/ H5T_NATIVE_DOUBLE);
-    res |= H5Aread(attr_id, memtype, &floatbuf);
-    res |= H5Tclose(memtype);
+    double* floatbuf = new double[npts];
+    res |= H5Aread(attr_id, dtype, floatbuf);
     if( res != 0 ) { 
       H5Tclose(dtype);
       H5Aclose(attr_id);
       return res; }
     else
-    attrs->push_back(Attribute(name, floatbuf));
+      for( auto i = 0; i < npts; i++) {
+        sstr.clear(); sstr.str("");
+        if( npts > 1 )
+          sstr << name << "[" << i << "]";
+        else sstr << name;
+        attrs->push_back(Attribute(sstr.str(), floatbuf[i]));
+      }
   } else if ( typeclass == H5T_STRING ) {
+    if( rank == 1 ) return -4; //no string array implemented.
     auto size = H5Tget_size(dtype);
-    char* buf = new char[size*sizeof(char)];
+    char* buf = new char[size];
     res = H5Aread(attr_id, dtype, buf);
     if( res != 0 ) { 
       delete[] buf;
@@ -137,8 +154,10 @@ Index indexFile(std::string filename) {
   H5Fclose(file_id);
 
   //turning some c into c++ errors:
-  if( visitres == -2 ) throw std::runtime_error("unimplemented datatype.");
+  if( visitres == -1 ) throw std::runtime_error("no multidimensional array implemented.");
+  else if( visitres == -2 ) throw std::runtime_error("unimplemented datatype.");
   else if( visitres == -3 ) throw std::runtime_error("cannot open object.");
+  else if( visitres == -4 ) throw std::runtime_error("no string array implemented.");
   else if( visitres < 0 )throw std::runtime_error("other unknown error during"
                                                   "traversal of the file.");
   //returning only the datasets and not the stack (which should be empty anyway)
