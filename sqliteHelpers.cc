@@ -70,7 +70,7 @@ void prepareSqliteFile(sqlite3 *db) {
     std::stringstream errstr;
     errstr << "SQL error: " << zErrMsg;
     throw std::runtime_error(errstr.str());
-  } else { std::cout << "DEBUG: created... ok." << std::endl;}
+  } else { std::cout << "database created." << std::endl;}
 }
 void insertDataset(sqlite3 *db, 
                    Index const & idx ){
@@ -124,21 +124,27 @@ void insertDataset(sqlite3 *db,
 
 std::vector<int> getLocIds(sqlite3 *db, Request const & req) {
   std::vector<int> res;
-  //build sql query:
-  std::stringstream sstr;
-  sstr << "select locid from filelocations where locid in ";
-  for( auto i = 0u; i < req.size(); ++i ){
-    sstr << "(select locid from attrvalues where " << 
-      req[i].getSqlValueDescription("value") << 
-      " and attrid=(select attrid from attributes where " << 
-      req[i].getSqlKeyDescription("attrname") << "))";
-    if( i < req.size() - 1 ) sstr << " and locid in ";
+  std::string query;
+  //for empty requests, return everything:
+  if( req.empty() )
+    query = "select locid from filelocations;";
+  else {
+    //build sql query:
+    std::stringstream sstr;
+    sstr << "select locid from filelocations where locid in ";
+    for( auto i = 0u; i < req.size(); ++i ){
+      sstr << "(select locid from attrvalues where " << 
+        req[i].getSqlValueDescription("value") << 
+        " and attrid=(select attrid from attributes where " << 
+        req[i].getSqlKeyDescription("attrname") << "))";
+      if( i < req.size() - 1 ) sstr << " and locid in ";
+    }
+    sstr << ";";
+    query = sstr.str();
   }
-  sstr << ";";
-  std::cout << "DEBUG: request = " << sstr.str() << std::endl;
   char *zErrMsg = nullptr;
   int rc = sqlite3_exec( db,
-      sstr.str().c_str(), insertIntCallback, &res, &zErrMsg );
+      query.c_str(), insertIntCallback, &res, &zErrMsg );
   if( rc != SQLITE_OK ) {
     std::stringstream errstr;
     errstr << "SQL error: " << zErrMsg;

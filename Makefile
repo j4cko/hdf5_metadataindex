@@ -1,23 +1,22 @@
 CXXFLAGS:= -g -std=c++11 -Wall
-HDRS_INDEXER:= attributes.h indexHdf5.h h5helpers.h sqliteHelpers.h
-OBJS_INDEXER:= attributes.o indexHdf5.o sqliteHelpers.cc
-DEPS_INDEXER:= $(HDRS_INDEXER) $(OBJS_INDEXER)
-HDRS_QUERY:= attributes.h indexHdf5.h sqliteHelpers.h conditions.h jsonToValue.h
-OBJS_QUERY:= attributes.o indexHdf5.o sqliteHelpers.cc
-DEPS_QUERY:= $(HDRS_QUERY) $(OBJS_QUERY)
+HDRS:= attributes.h indexHdf5.h h5helpers.h sqliteHelpers.h conditions.h
+HDRS_JSON:= jsonToValue.h
+OBJS:= sqliteHelpers.o indexHdf5.o attributes.o
+DEPS:= $(HDRS) $(OBJS)
+DEPS_QUERY:= $(HDRS) $(HDRS_JSON) $(OBJS)
 
 PROGS:= indexHdf5 queryDb
 
 all: $(PROGS)
 
-%.o: %.cc $(HDRS_INDEXER)
+%.o: %.cc $(HDRS)
 	$(CXX) -c -o $@ $(CXXFLAGS) $<
 
-indexHdf5: indexer.o $(DEPS_INDEXER)
-	$(CXX) -o $@ $(CXXFLAGS) -lhdf5 -lsqlite3 $< $(OBJS_INDEXER)
+indexHdf5: indexer.o $(DEPS)
+	$(CXX) -o $@ $(CXXFLAGS) -lhdf5 -lsqlite3 $< $(OBJS)
 
 queryDb: queryDb.o $(DEPS_QUERY)
-	$(CXX) -o $@ $(CXXFLAGS) -lhdf5 -lsqlite3 -ljsoncpp $< $(OBJS_QUERY)
+	$(CXX) -o $@ $(CXXFLAGS) -lhdf5 -lsqlite3 -ljsoncpp $< $(OBJS)
 
 clean:
 	rm -vf *~ *.o $(PROGS)
