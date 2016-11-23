@@ -6,10 +6,22 @@
 #include <stdexcept>
 #include <cassert>
 #include <ostream>
+#include <memory>
+
+enum class Type {
+  NUMERIC,
+  BOOLEAN,
+  STRING
+};
+
+std::string typeToString(Type const & type);
+Type typeFromTypeid(std::type_info const & tinfo);
+
 class Value {
 public:
   template <typename T>
-  Value(T const &content_) : content(new Model<T>(content_)) {}
+  Value(T const &content_) : content(new Model<T>(content_)), 
+                             type(typeFromTypeid(typeid(T))) {}
   ~Value() { delete content; }
   Value(Value const &rr) : content(rr.content->clone()) {}
   Value &operator=(Value rr) {
@@ -20,7 +32,7 @@ public:
   }
   template <typename T>
   operator T() const { return this->get<T>(); }
-  std::string typeName() const { return std::string(content->ti.name()); }
+  Type getType() const { return type; }
   bool typeMatches(std::type_info const &tinfo) const {
     return content->ti.hash_code() == tinfo.hash_code();
   }
@@ -39,38 +51,50 @@ private:
     Concept() = delete;
     Concept(std::type_info const &ti_) : ti(ti_) {}
     virtual Concept *clone() const = 0;
-    virtual void print(std::ostream& os) = 0;
+    virtual void print(std::ostream& os) const = 0;
     std::type_info const &ti;
   };
+
   template <typename T> struct Model : Concept {
     Model(T const &value) : Concept(typeid(T)), object(value) {}
-    void print(std::ostream& os){ os << object; }
+    void print(std::ostream& os) const { os << object; }
     Concept *clone() const { return new Model(object); }
     T object;
   };
   Concept *content;
+  Type type;
 };
-enum class Type {
-  NUMERIC,
-  BOOLEAN,
-  STRING
-};
-std::string typeToString(Type const & type);
-Type typeFromTypeid(std::type_info const & tinfo);
+
 class Attribute {
   public:
     template<typename T>
     Attribute(std::string const & name, T const & in) : 
-      attrname(name), val(in), type(typeFromTypeid(typeid(T))) {
+      attrname(name), val(in) {
       assert(val.typeMatches(typeid(T)));
     }
-    Type getType() const { return type; }
+    Type getType() const { return val.getType(); }
     Value getValue() const { return val; };
     std::string getName() const { return attrname; };
   private:
     std::string attrname;
     Value val;
-    Type type;
+};
+
+class Condition {
+  public:
+    virtual bool matches(Attribute const & attr) = 0;
+    virtual std::unique_ptr<Condition> clone() const = 0;
+};
+
+class AttributeRequest {
+  public:
+    AttributeRequest(std::string const & name, Condition const & in) :
+      reqname(name), cond(std::move(in.clone())) {}
+    bool matches(Attribute const & attr) const;
+    std::string getName() const { return reqname; }
+  private:
+    std::string reqname;
+    std::unique_ptr<Condition> cond;
 };
 
 Attribute attributeFromStrings(std::string const & name, std::string const & valstr, 
