@@ -14,12 +14,15 @@ class Equals : public Condition {
       return std::unique_ptr<Equals>(new Equals(val)); }
     std::string getSqlValueDescription(std::string const & valentryname) const { 
       std::stringstream sstr;
-      sstr << valentryname << " = \"" << val << "\" ";
+      if( val.getType() == Type::STRING )
+        sstr << valentryname << " = '" << val << "' ";
+      else
+        sstr << valentryname << " = " << val << " ";
       return sstr.str();
     }
     std::string getSqlKeyDescription(std::string const& keyentryname, std::string const & name) const {
       std::stringstream sstr;
-      sstr << keyentryname << " = \"" << name << "\" ";
+      sstr << keyentryname << " = '" << name << "' ";
       return sstr.str();
     }
   private:
@@ -36,12 +39,16 @@ class Range: public Condition {
       return std::unique_ptr<Range>(new Range(min, max)); }
     std::string getSqlValueDescription(std::string const & valentryname) const { 
       std::stringstream sstr;
-      sstr << valentryname << " between \"" << min << "\" and \"" << max << "\"";
+      assert(min.getType() == max.getType());
+      if( min.getType() == Type::STRING )
+        sstr << valentryname << " between '" << min << "' and '" << max << "' ";
+      else
+        sstr << valentryname << " between " << min << " and " << max << " ";
       return sstr.str();
     }
     std::string getSqlKeyDescription(std::string const& keyentryname, std::string const & name) const {
       std::stringstream sstr;
-      sstr << keyentryname << " = \"" << name << "\" ";
+      sstr << keyentryname << " = '" << name << "' ";
       return sstr.str();
     }
   private:
@@ -58,12 +65,15 @@ class Min : public Condition {
       return std::unique_ptr<Min>(new Min(min)); }
     std::string getSqlValueDescription(std::string const & valentryname) const { 
       std::stringstream sstr;
-      sstr << valentryname << " >= \"" << min << "\"";
+      if( min.getType() == Type::STRING )
+        sstr << valentryname << " >= '" << min << "' ";
+      else
+        sstr << valentryname << " >= " << min << " ";
       return sstr.str();
     }
     std::string getSqlKeyDescription(std::string const& keyentryname, std::string const & name) const {
       std::stringstream sstr;
-      sstr << keyentryname << " = \"" << name << "\" ";
+      sstr << keyentryname << " = '" << name << "' ";
       return sstr.str();
     }
   private:
@@ -79,12 +89,15 @@ class Max : public Condition {
       return std::unique_ptr<Max>(new Max(max)); }
     std::string getSqlValueDescription(std::string const & valentryname) const { 
       std::stringstream sstr;
-      sstr << valentryname << " <= \"" << max << "\"";
+      if( max.getType() == Type::STRING )
+        sstr << valentryname << " <= '" << max << "' ";
+      else
+        sstr << valentryname << " <= " << max << " ";
       return sstr.str();
     }
     std::string getSqlKeyDescription(std::string const& keyentryname, std::string const & name) const {
       std::stringstream sstr;
-      sstr << keyentryname << " = \"" << name << "\" ";
+      sstr << keyentryname << " = '" << name << "' ";
       return sstr.str();
     }
   private:
@@ -109,9 +122,9 @@ class Present : public Condition {
     std::string getSqlKeyDescription(std::string const& keyentryname, std::string const & name) const {
       std::stringstream sstr;
       if( present )
-        sstr << keyentryname << " = \"" << name << "\" ";
+        sstr << keyentryname << " = '" << name << "' ";
       else
-        sstr << keyentryname << " != \"" << name << "\" ";
+        sstr << keyentryname << " != '" << name << "' ";
       return sstr.str();
     }
   private:
@@ -131,15 +144,25 @@ class Or : public Condition {
       return std::unique_ptr<Or>(new Or(vals)); }
     std::string getSqlValueDescription(std::string const & valentryname) const { 
       std::stringstream sstr;
+      assert(vals.size() > 0);
+      Type typecheck = vals.front();
       sstr << "( ";
-      for( auto i = 0u; i < vals.size() - 1; i++ )
-        sstr << valentryname << " = \"" << vals[i] << "\" or ";
-      sstr << valentryname << " = \"" << vals.back() << "\" )";
+      for( auto i = 0u; i < vals.size() - 1; i++ ){
+        assert(vals[i].getType() == typecheck);
+        if( typecheck == Type::STRING )
+          sstr << valentryname << " = '" << vals[i] << "' or ";
+        else
+          sstr << valentryname << " = " << vals[i] << " or ";
+      }
+      if( typecheck == Type::STRING )
+        sstr << valentryname << " = '" << vals.back() << "' or ";
+      else
+        sstr << valentryname << " = " << vals.back() << " )";
       return sstr.str();
     }
     std::string getSqlKeyDescription(std::string const& keyentryname, std::string const & name) const {
       std::stringstream sstr;
-      sstr << keyentryname << "= \"" << name << "\" ";
+      sstr << keyentryname << "= '" << name << "' ";
       return sstr.str();
     }
   private:
