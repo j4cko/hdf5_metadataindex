@@ -23,6 +23,10 @@ AttributeRequest parseAttributeRequest(Json::Value const & root, std::string con
   if( isRepresentableAsValue(root[name]) ) {
     return AttributeRequest(name, AttributeConditions::Equals(jsonValueToValue(root[name])));
   }
+  else if( root[name].isMember("not") ) {
+    return AttributeRequest(name, AttributeConditions::NotEquals(
+            jsonValueToValue(root[name]["not"])));
+  }
   else if( root[name].isMember("min") and root[name].isMember("max") ){
     return AttributeRequest(name, AttributeConditions::Range(
             jsonValueToValue(root[name]["min"]),

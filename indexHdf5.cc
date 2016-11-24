@@ -109,7 +109,6 @@ herr_t h5_link_iterate( hid_t thislink, const char *name, const H5L_info_t *info
   //
   //save name and attributes on the stack index:
   assert(not stackidx.empty());
-  std::cout << "DEBUG: stackidx.back().filename=" << stackidx.back().file.filename << std::endl;
 
   stackidx.push_back({attrdata, std::string(name), stackidx.back().file});
 
@@ -160,7 +159,6 @@ Index indexFile(std::string filename) {
   std::pair<Index,Index> data;
   data.first.push_back({{}, "", filename, mtime});
   herr_t visitres = H5Literate(file_id, H5_INDEX_NAME, H5_ITER_NATIVE, NULL, h5_link_iterate, &data);
-  std::cout << "DEBUG: " << __LINE__ << ": " << data.first.back().file.filename << " and " << data.second.back().file.filename << std::endl;
   H5Fclose(file_id);
 
   //turning some c into c++ errors:

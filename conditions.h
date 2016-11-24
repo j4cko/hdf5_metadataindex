@@ -2,6 +2,7 @@
 #define __CONDITIONS_H__
 #include "attributes.h"
 #include <sstream>
+#include <iostream>
 #include <regex>
 
 namespace AttributeConditions {
@@ -24,7 +25,28 @@ class Equals : public AttributeCondition {
   private:
     Value val;
 };
-
+class NotEquals : public AttributeCondition { 
+  public:
+    NotEquals(Value val_) : val(val_) {}
+    bool matches(Attribute const & attr, std::string const & reqname) const {
+      if( attr.getType() == val.getType() and attr.getName() == reqname 
+          and (not (attr.getValue() == val)) ) return true;
+      else return false;
+    }
+    std::unique_ptr<AttributeCondition> clone() const { 
+      //make_unique is missing in C++11:
+      return std::unique_ptr<NotEquals>(new NotEquals(val)); }
+    std::string getSqlValueDescription(std::string const & valentryname) const { 
+      std::stringstream sstr;
+      if( val.getType() == Type::STRING )
+        sstr << valentryname << " != '" << val << "' ";
+      else
+        sstr << valentryname << " != " << val << " ";
+      return sstr.str();
+    }
+  private:
+    Value val;
+};
 class Range: public AttributeCondition { 
   public:
     Range(Value min_, Value max_) : min(min_), max(max_) {}

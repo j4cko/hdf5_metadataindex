@@ -31,8 +31,6 @@ int main(int argc, char** argv) {
 
   auto idx = getMatchingDatasetSpecs(db, req);
 
-  std::cout << "DEBUG: " << __LINE__ << ": " << idx.back().file.filename << std::endl;
-
   printIndex(idx, std::cout);
 
   auto files = getUniqueFiles(idx);

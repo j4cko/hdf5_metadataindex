@@ -50,9 +50,6 @@ public:
     if( a.getType() != b.getType() ) return false;
     return a.content->equals(b.content);
   }
-  friend bool operator!=(Value const & a, Value const &b) {
-    return (not a == b);
-  }
   friend bool operator<(Value const & a, Value const & b) {
     if( a.getType() != b.getType() ) 
       throw std::runtime_error("operator<: comparing Values of different type.");
@@ -92,27 +89,27 @@ private:
     Model(T const &value) : Concept(typeid(T)), object(value) {}
     void print(std::ostream& os) const { os << object; }
     bool equals(Concept const * other) const {
-      if( other->ti != ti ) return false;
+      if( other->ti.hash_code() != ti.hash_code() ) return false;
       //now, a cast is safe:
       return (object == static_cast<Model<T> const*>(other)->object);
     }
     bool less(Concept const * other) const {
-      if( other->ti != ti ) return false;
+      if( other->ti.hash_code() != ti.hash_code() ) return false;
       //now, a cast is safe:
       return (object < static_cast<Model<T> const*>(other)->object);
     }
     bool lessEqual(Concept const * other) const {
-      if( other->ti != ti ) return false;
+      if( other->ti.hash_code() != ti.hash_code() ) return false;
       //now, a cast is safe:
       return (object <= static_cast<Model<T> const*>(other)->object);
     }
     bool greater(Concept const * other) const {
-      if( other->ti != ti ) return false;
+      if( other->ti.hash_code() != ti.hash_code() ) return false;
       //now, a cast is safe:
       return (object > static_cast<Model<T> const*>(other)->object);
     }
     bool greaterEqual(Concept const * other) const {
-      if( other->ti != ti ) return false;
+      if( other->ti.hash_code() != ti.hash_code() ) return false;
       //now, a cast is safe:
       return (object >= static_cast<Model<T> const*>(other)->object);
     }
