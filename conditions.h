@@ -21,11 +21,6 @@ class Equals : public Condition {
         sstr << valentryname << " = " << val << " ";
       return sstr.str();
     }
-    std::string getSqlKeyDescription(std::string const& keyentryname, std::string const & name) const {
-      std::stringstream sstr;
-      sstr << keyentryname << " = '" << name << "' ";
-      return sstr.str();
-    }
   private:
     Value val;
 };
@@ -45,11 +40,6 @@ class Range: public Condition {
         sstr << valentryname << " between '" << min << "' and '" << max << "' ";
       else
         sstr << valentryname << " between " << min << " and " << max << " ";
-      return sstr.str();
-    }
-    std::string getSqlKeyDescription(std::string const& keyentryname, std::string const & name) const {
-      std::stringstream sstr;
-      sstr << keyentryname << " = '" << name << "' ";
       return sstr.str();
     }
   private:
@@ -72,11 +62,6 @@ class Min : public Condition {
         sstr << valentryname << " >= " << min << " ";
       return sstr.str();
     }
-    std::string getSqlKeyDescription(std::string const& keyentryname, std::string const & name) const {
-      std::stringstream sstr;
-      sstr << keyentryname << " = '" << name << "' ";
-      return sstr.str();
-    }
   private:
     Value min;
 };
@@ -96,11 +81,6 @@ class Max : public Condition {
         sstr << valentryname << " <= " << max << " ";
       return sstr.str();
     }
-    std::string getSqlKeyDescription(std::string const& keyentryname, std::string const & name) const {
-      std::stringstream sstr;
-      sstr << keyentryname << " = '" << name << "' ";
-      return sstr.str();
-    }
   private:
     Value max;
 };
@@ -115,19 +95,6 @@ class Present : public Condition {
     std::unique_ptr<Condition> clone() const { 
       //make_unique is missing in C++11:
       return std::unique_ptr<Present>(new Present(present)); }
-    std::string getSqlValueDescription(std::string const & valentryname) const { 
-      std::stringstream sstr;
-      sstr << valentryname << " is not null";
-      return sstr.str();
-    }
-    std::string getSqlKeyDescription(std::string const& keyentryname, std::string const & name) const {
-      std::stringstream sstr;
-      if( present )
-        sstr << keyentryname << " = '" << name << "' ";
-      else
-        sstr << keyentryname << " != '" << name << "' ";
-      return sstr.str();
-    }
   private:
     bool present;
 };
@@ -161,11 +128,6 @@ class Or : public Condition {
         sstr << valentryname << " = " << vals.back() << " )";
       return sstr.str();
     }
-    std::string getSqlKeyDescription(std::string const& keyentryname, std::string const & name) const {
-      std::stringstream sstr;
-      sstr << keyentryname << "= '" << name << "' ";
-      return sstr.str();
-    }
   private:
     std::vector<Value> vals;
 };
@@ -180,16 +142,6 @@ class Matches : public Condition {
     std::unique_ptr<Condition> clone() const { 
       //make_unique is missing in C++11:
       return std::unique_ptr<Matches>(new Matches(regex)); }
-    std::string getSqlValueDescription(std::string const & valentryname) const { 
-      std::stringstream sstr;
-      sstr << valentryname << " is not null ";
-      return sstr.str();
-    }
-    std::string getSqlKeyDescription(std::string const& keyentryname, std::string const & name) const {
-      std::stringstream sstr;
-      sstr << keyentryname << " = '" << name << "' ";
-      return sstr.str();
-    }
   private:
     std::regex regex;
 };}

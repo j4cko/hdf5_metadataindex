@@ -143,8 +143,15 @@ class Condition {
     virtual bool matches(Attribute const & attr, std::string const & reqname) const = 0;
     virtual std::unique_ptr<Condition> clone() const = 0;
     //TODO: further abstraction for cases that do not rely on SQL?
-    virtual std::string getSqlValueDescription(std::string const & valentryname) const = 0;
-    virtual std::string getSqlKeyDescription(std::string const & keyentryname, std::string const & name) const = 0;
+    //these sql request are only supposed to be a prefiltering, the final decision if
+    //an attribute matches the condition is done by the routine matches!
+    //  (thus, returning "is not null" is a valid default here)
+    virtual std::string getSqlValueDescription(std::string const & valentryname) const {
+      return valentryname + std::string(" is not null");
+    }
+    virtual std::string getSqlKeyDescription(std::string const & keyentryname, std::string const & name) const {
+      return keyentryname + std::string(" = '") + name + std::string("'");
+    }
 };
 
 class AttributeRequest {

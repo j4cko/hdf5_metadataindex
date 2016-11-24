@@ -46,6 +46,9 @@ AttributeRequest parseRequest(Json::Value const & root, std::string const & name
     }
     return AttributeRequest(name, Conditions::Or(vec));
   }
+  else if( root[name].isMember("matches") and root[name]["matches"].isString() ) {
+    return AttributeRequest(name, Conditions::Matches(root[name]["matches"].asString()));
+  }
   else {
     throw std::runtime_error("json value is not parsable to Request.");
   }

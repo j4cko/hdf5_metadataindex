@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
   auto files = getUniqueFiles(idx);
   for( auto file : files ) {
     if( not H5DataHelpers::h5_file_exists(file.filename) )
-      std::cerr << "original file no longer exists at this place: " << files.back().filename << std::endl;
+      std::cerr << "original file no longer exists at this place: \"" << file.filename << "\"" << std::endl;
     else {
       //check one of the files for mtime:
       auto mtime = H5DataHelpers::getFileModificationTime(file.filename);
