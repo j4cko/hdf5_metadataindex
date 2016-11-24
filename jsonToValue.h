@@ -17,23 +17,28 @@ Value jsonValueToValue(Json::Value const & json) {
   }
 }
 AttributeRequest parseRequest(Json::Value const & root, std::string const & name) {
-  if( root[name].size() != 0 ) {
-    throw std::runtime_error("parseRequest: lists / arrays are currently not supported.");
+  if( root[name].isArray() ) {
+    throw std::runtime_error("array requests are not implemented.");
   }
-  if( isRepresentableAsValue(root[name]) )
+  if( isRepresentableAsValue(root[name]) ) {
     return AttributeRequest(name, Conditions::Equals(jsonValueToValue(root[name])));
-  else if( root[name].isMember("min") and root[name].isMember("max") )
+  }
+  else if( root[name].isMember("min") and root[name].isMember("max") ){
     return AttributeRequest(name, Conditions::Range(
             jsonValueToValue(root[name]["min"]),
             jsonValueToValue(root[name]["max"])));
-  else if( root[name].isMember("min") )
+  }
+  else if( root[name].isMember("min") ){
     return AttributeRequest(name, Conditions::Min(
             jsonValueToValue(root[name]["min"])));
-  else if( root[name].isMember("max") )
+  }
+  else if( root[name].isMember("max") ){
     return AttributeRequest(name, Conditions::Max(
             jsonValueToValue(root[name]["max"])));
-  else if( root[name].isMember("present") and root[name]["present"].isBool() )
+  }
+  else if( root[name].isMember("present") and root[name]["present"].isBool() ){
     return AttributeRequest(name, Conditions::Present(root[name]["present"].asBool()));
+  }
   else if( root[name].isMember("or") and root[name]["or"].isArray() ) {
     std::vector<Value> vec;
     for( auto const & elem : root[name]["or"] ) {
@@ -41,8 +46,9 @@ AttributeRequest parseRequest(Json::Value const & root, std::string const & name
     }
     return AttributeRequest(name, Conditions::Or(vec));
   }
-  else
+  else {
     throw std::runtime_error("json value is not parsable to Request.");
+  }
 }
 Request queryToRequest(std::string const & query) {
   Request req;
