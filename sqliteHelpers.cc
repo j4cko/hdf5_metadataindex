@@ -15,17 +15,26 @@ static int insertIntCallback(void *idx, int argc, char** argv, char** azColName)
   vec->push_back(res);
   return 0;
 }
-static int getStringCallback(void *str, int argc, char** argv, char** azColName) {
-  if( argc != 1) { return -1;}
-  *((std::string*)str) = std::string(argv[0]);
-  return 0;
-}
 static int getIntCallback(void *intvar, int argc, char** argv, char** azColName) {
   if( argc != 1) { return -1;}
   std::stringstream sstr(argv[0]);
   sstr >> *((int*)intvar);
   return 0;
 }
+static int dsetspecFileinfoCallback(void *var, int argc, char** argv, char** azColName) {
+  DatasetSpec* dsetspec = (DatasetSpec*) var;
+  if( argc != 3 ) return -1;
+  for(int i = 0; i < argc; i++) {
+    if( std::string(azColName[i]) == "locname" ) dsetspec->datasetname = std::string(argv[i]);
+    else if( std::string(azColName[i]) == "fname" ) dsetspec->file.filename = std::string(argv[i]);
+    else if( std::string(azColName[i]) == "mtime" ) {
+      std::stringstream sstr(argv[i]);
+      sstr >> dsetspec->file.mtime;
+    }
+  }
+  return 0;
+}
+
 static int printCallback(void *NotUsed, int argc, char** argv, char** azColName){
   for(int i = 0; i < argc; i++){
     std::cout << azColName[i] << " = " << (argv[i] ? argv[i] : "NULL") << std::endl;
@@ -85,13 +94,14 @@ void prepareSqliteFile(sqlite3 *db) {
     throw std::runtime_error(errstr.str());
   } else { std::cout << "database created." << std::endl;}
 }
-void insertDataset(sqlite3 *db, 
-                   Index const & idx, std::string const & file, unsigned int mtime){
+void insertDataset(sqlite3 *db, Index const & idx ) {
   char *zErrMsg = nullptr;
   std::stringstream sstr;
-  //insert file:
-  sstr << "insert into files(fname, mtime) values(\"" << file << "\", "
-                                                      << mtime << ");";
+  //insert all files:
+  auto filelist = getUniqueFiles(idx);
+  for( auto file : filelist )
+    sstr << "insert into files(fname, mtime) values(\"" << file.filename << "\", "
+                                                        << file.mtime << ");";
   int rc = sqlite3_exec( db,
       sstr.str().c_str(), printCallback, 0, &zErrMsg );
   if( rc != SQLITE_OK ) {
@@ -100,25 +110,15 @@ void insertDataset(sqlite3 *db,
     throw std::runtime_error(errstr.str());
   }
   sstr.clear(); sstr.str("");
-  //retrieve the fileid:
-  int fileid = -1;
-  sstr << "select fileid from files where fname = \"" << file << "\" "
-       << "and mtime = " << mtime << ";";
-  rc = sqlite3_exec( db,
-      sstr.str().c_str(), getIntCallback, &fileid, &zErrMsg );
-  if( rc != SQLITE_OK ) {
-    std::stringstream errstr;
-    errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << sstr.str();
-    throw std::runtime_error(errstr.str());
-  }
-  sstr.clear(); sstr.str("");
+  
   //insert attributes and filelocations:
   sstr << "begin transaction;";
   for( auto dset : idx ){
     sstr << 
-      "insert into filelocations(locname,fileid) values(\"" << dset.second << 
-      "\"," << fileid << ");";
-    for( auto attr : dset.first ){
+      "insert into filelocations(locname,fileid) values('" << dset.datasetname << 
+      "',(select fileid from files where fname = '" << dset.file.filename << 
+      "' and mtime = " << dset.file.mtime << "));";
+    for( auto attr : dset.attributes ){
       // TODO: should find another sol than ignore..
       sstr <<
         "insert or ignore into attributes(attrname,type) values(\"" <<
@@ -137,10 +137,10 @@ void insertDataset(sqlite3 *db,
   sstr.clear(); sstr.str("");
   sstr << "begin transaction;";
   for( auto dset : idx ){
-    for( auto attr : dset.first ){
+    for( auto attr : dset.attributes ){
       sstr <<
         "insert into attrvalues(attrid,locid,value) values(( select attrid from attributes where attrname=\"" <<
-        attr.getName() << "\"), (select locid from filelocations where locname=\"" << dset.second << "\"),";
+        attr.getName() << "\"), (select locid from filelocations where locname=\"" << dset.datasetname << "\"),";
       if(attr.getType() == Type::STRING)
         //TODO: need to "escape" single quotes? single quotes are escaped by
         //single quotes..
@@ -164,7 +164,7 @@ void insertDataset(sqlite3 *db,
 // find all with 250 smeariter and 3 hpe:
 // select locname from filelocations where locid in (select locid from attrvalues where value="3" and attrid=(select attrid from attributes where attrname="hpe")) and locid in (select locid from attrvalues where value="250" and attrid=(select attrid from attributes where attrname="smeariter"))
 
-std::vector<int> getLocIds(sqlite3 *db, Request const & req) {
+std::vector<int> getLocIdsMatchingPreSelection(sqlite3 *db, Request const & req) {
   std::vector<int> res;
   std::string query;
   //for empty requests, return everything:
@@ -249,11 +249,12 @@ std::vector<std::string> idsToFilenames(sqlite3 *db,
 DatasetSpec idsToDatasetSpec(sqlite3 *db, int locid) {
   DatasetSpec res;
   std::stringstream sstr;
-  // first get the locname:
-  sstr << "select locname from filelocations where locid=\"" << locid << "\";";
+  // first get the locname (datasetname)
+  // select locname,fname,mtime from (select * from filelocations inner join files on filelocations.fileid = files.fileid);
+  sstr << "select locname,fname,mtime from (select * from filelocations inner join files on filelocations.fileid = files.fileid) where locid=\"" << locid << "\";";
   char *zErrMsg = nullptr;
   int rc = sqlite3_exec( db, 
-      sstr.str().c_str(), getStringCallback, &(res.second), &zErrMsg );
+      sstr.str().c_str(), dsetspecFileinfoCallback, &res, &zErrMsg );
   if( rc != SQLITE_OK ) {
     std::stringstream errstr;
     errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << sstr.str();
@@ -263,7 +264,7 @@ DatasetSpec idsToDatasetSpec(sqlite3 *db, int locid) {
   sstr.clear(); sstr.str("");
   sstr << "select attrname,value,type from (select * from attributes inner join attrvalues on attributes.attrid = attrvalues.attrid) where locid=\"" << locid << "\";";
   rc = sqlite3_exec( db, 
-      sstr.str().c_str(), insertAttributeCallback, &(res.first), &zErrMsg );
+      sstr.str().c_str(), insertAttributeCallback, &(res.attributes), &zErrMsg );
   if( rc != SQLITE_OK ) {
     std::stringstream errstr;
     errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << sstr.str();

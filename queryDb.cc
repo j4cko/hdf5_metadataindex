@@ -5,6 +5,15 @@
 #include <sstream>
 #include "jsonToValue.h"
 #include "h5helpers.h"
+#include "postselection.h"
+#include <list>
+
+Index getMatchingDatasetSpecs(sqlite3 *db, Request const & req) {
+  auto ids = getLocIdsMatchingPreSelection(db, req);
+  Index idx = idsToIndex(db, ids);
+  filterIndexByPostselectionRules(idx, req);
+  return idx;
+}
 
 int main(int argc, char** argv) {
   if( argc != 3 ) {
@@ -20,31 +29,24 @@ int main(int argc, char** argv) {
   sqlite3 *db;
   sqlite3_open(dbfile.c_str(), &db);
 
-  /*auto names = getFilelocations(db, req);
-  for( auto name : names ) { std::cout << name << std::endl; }
-  */
-  auto ids = getLocIds(db, req);
-  Index idx = idsToIndex(db, ids);
+  auto idx = getMatchingDatasetSpecs(db, req);
 
-  auto res = idsToDsetnames(db, ids);
-  auto files = idsToFilenames(db, ids);
+  std::cout << "DEBUG: " << __LINE__ << ": " << idx.back().file.filename << std::endl;
 
-  for( auto file : files ) std::cout << file << std::endl;
   printIndex(idx, std::cout);
-  assert(res.size() == files.size());
-  for( auto i = 0u; i < res.size(); ++i) {
-    std::cout << res[i] << " " << files[i] << std::endl; }
 
-  if( not H5DataHelpers::h5_file_exists(files.back()) )
-    std::cerr << "original file no longer exists at this place: " << files.back() << std::endl;
-  else {
-    //check one of the files for mtime:
-    auto mtime = H5DataHelpers::getFileModificationTime(files.back());
-    auto mtimeDb = getFileModificationTime(db, files.back());
-    if( mtime - mtimeDb > 0 )
-      std::cerr << "file \"" << files.back() << "\" has changed since db creation." << std::endl;
-    else
-      std::cout << "file \"" << files.back() << "\" probably in sync with db." << std::endl;
+  auto files = getUniqueFiles(idx);
+  for( auto file : files ) {
+    if( not H5DataHelpers::h5_file_exists(file.filename) )
+      std::cerr << "original file no longer exists at this place: " << files.back().filename << std::endl;
+    else {
+      //check one of the files for mtime:
+      auto mtime = H5DataHelpers::getFileModificationTime(file.filename);
+      if( mtime - file.mtime > 0 )
+        std::cerr << "file \"" << files.back().filename << "\" has changed since db creation." << std::endl;
+      else
+        std::cout << "file \"" << files.back().filename << "\" probably in sync with db." << std::endl;
+    }
   }
 
   sqlite3_close(db);

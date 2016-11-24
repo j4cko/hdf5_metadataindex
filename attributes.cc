@@ -42,3 +42,15 @@ Attribute attributeFromStrings(std::string const & name, std::string const & val
       throw std::runtime_error("attributeFromStrings: unimplemented type");
   }
 }
+std::list<File> getUniqueFiles(Index const & idx) {
+  std::list<File> res;
+  for(auto const & dsetspec : idx ) {
+    res.push_back(dsetspec.file);
+  }
+  res.sort([](File const & a, File const & b){
+      if( a.filename == b.filename ) return a.mtime < b.mtime;
+      else return a.filename < b.filename;
+      });
+  res.unique();
+  return res;
+}

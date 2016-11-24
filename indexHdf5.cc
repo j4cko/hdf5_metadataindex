@@ -78,13 +78,17 @@ DatasetSpec processvector( Index const & idxstack ) {
   DatasetSpec thisspec;
   std::string fullpath("");
   for( auto const & elem : idxstack) {
-    fullpath += "/" + elem.second;
-    for( auto const & attr : elem.first ) {
-      thisspec.first.push_back(attr);
+    // avoid double slashes at the beginning (first / root elem of idxstack is
+    // the file itself
+    if( not elem.datasetname.empty() ) fullpath += "/" + elem.datasetname;
+    std::cout << "elem: " << elem.datasetname << " from file " << elem.file.filename << std::endl;
+    for( auto const & attr : elem.attributes ) {
+      thisspec.attributes.push_back(attr);
     }
   }
   // give it the name of the current node:
-  thisspec.second = fullpath;
+  thisspec.datasetname = fullpath;
+  thisspec.file        = idxstack.back().file;
   return thisspec;
 }
 herr_t h5_link_iterate( hid_t thislink, const char *name, const H5L_info_t *info, void *opdata) {
@@ -104,7 +108,10 @@ herr_t h5_link_iterate( hid_t thislink, const char *name, const H5L_info_t *info
   if( res < 0 ) return res;
   //
   //save name and attributes on the stack index:
-  stackidx.push_back({attrdata, std::string(name)});
+  assert(not stackidx.empty());
+  std::cout << "DEBUG: stackidx.back().filename=" << stackidx.back().file.filename << std::endl;
+
+  stackidx.push_back({attrdata, std::string(name), stackidx.back().file});
 
   //find out the type of the object:
   H5O_info_t objinfo;
@@ -139,6 +146,7 @@ Index indexFile(std::string filename) {
     sstr << "File \"" << filename << "\" is not a hdf5 file.";
     throw std::runtime_error(sstr.str());
   }
+  int mtime = H5DataHelpers::getFileModificationTime(filename);
 
   //open file:
   hid_t file_id = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
@@ -150,7 +158,9 @@ Index indexFile(std::string filename) {
   // the second is the collection of all datasets that will be gathered into the
   // database.
   std::pair<Index,Index> data;
+  data.first.push_back({{}, "", filename, mtime});
   herr_t visitres = H5Literate(file_id, H5_INDEX_NAME, H5_ITER_NATIVE, NULL, h5_link_iterate, &data);
+  std::cout << "DEBUG: " << __LINE__ << ": " << data.first.back().file.filename << " and " << data.second.back().file.filename << std::endl;
   H5Fclose(file_id);
 
   //turning some c into c++ errors:
@@ -165,9 +175,10 @@ Index indexFile(std::string filename) {
 }
 void printIndex(Index const & idx, std::ostream& os) {
   for ( auto dataset : idx ) {
-    os << "dataset: " << dataset.second << 
+    os << "dataset \"" << dataset.datasetname << "\" (from file \""
+      << dataset.file.filename << "\")" <<
       " has the following attributes:" << std::endl;
-    for ( auto attr : dataset.first ) {
+    for ( auto attr : dataset.attributes ) {
       os << "  - " << attr.getName() 
         << " (" << typeToString(attr.getType()) << ") = "
         << attr.getValue() << std::endl;

@@ -7,6 +7,7 @@
 #include <cassert>
 #include <ostream>
 #include <memory>
+#include <list>
 
 enum class Type {
   NUMERIC,
@@ -160,11 +161,23 @@ class AttributeRequest {
     std::string reqname;
     std::unique_ptr<Condition> cond;
 };
+struct File {
+  std::string filename;
+  int mtime;
+  friend bool operator==(File const & a, File const & b) {
+    return a.filename == b.filename and a.mtime == b.mtime;
+  }
+};
+struct DatasetSpec {
+  std::vector<Attribute> attributes;
+  std::string datasetname;
+  File file;
+};
+typedef std::vector<DatasetSpec> Index;
+typedef std::vector<AttributeRequest> Request;
+
+std::list<File> getUniqueFiles(Index const & idx);
 
 Attribute attributeFromStrings(std::string const & name, std::string const & valstr, 
         std::string const & typestr);
-
-typedef std::vector<std::pair<std::vector<Attribute>,std::string>> Index;
-
-Index indexFile(std::string filename);
 #endif

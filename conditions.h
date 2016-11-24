@@ -2,6 +2,7 @@
 #define __CONDITIONS_H__
 #include "attributes.h"
 #include <sstream>
+#include <regex>
 
 namespace Conditions {
 class Equals : public Condition { 
@@ -168,5 +169,28 @@ class Or : public Condition {
   private:
     std::vector<Value> vals;
 };
-}
+class Matches : public Condition { 
+  public:
+    Matches(std::string regex_) : regex(std::regex(regex_)) {}
+    Matches(std::regex regex_) : regex(regex_) {}
+    bool matches(Attribute const & attr, std::string const & reqname) const {
+      std::stringstream sstr;
+      sstr << attr.getValue();
+      return attr.getName() == reqname and std::regex_match(sstr.str(), regex); }
+    std::unique_ptr<Condition> clone() const { 
+      //make_unique is missing in C++11:
+      return std::unique_ptr<Matches>(new Matches(regex)); }
+    std::string getSqlValueDescription(std::string const & valentryname) const { 
+      std::stringstream sstr;
+      sstr << valentryname << " is not null ";
+      return sstr.str();
+    }
+    std::string getSqlKeyDescription(std::string const& keyentryname, std::string const & name) const {
+      std::stringstream sstr;
+      sstr << keyentryname << " = '" << name << "' ";
+      return sstr.str();
+    }
+  private:
+    std::regex regex;
+};}
 #endif

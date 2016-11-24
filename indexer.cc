@@ -34,15 +34,13 @@ int main(int argc, char** argv) {
   const std::string h5file(argv[1]);
   const std::string sqlfile(argv[2]);
 
-  int mtime = H5DataHelpers::getFileModificationTime(h5file);
-
   sqlite3 *db;
   sqlite3_open(sqlfile.c_str(), &db);
   prepareSqliteFile(db);
 
   Index idx = indexFile(h5file);
 
-  insertDataset(db, idx, h5file, mtime);
+  insertDataset(db, idx);
 
   sqlite3_close(db);
   
