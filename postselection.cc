@@ -1,13 +1,13 @@
 #include "postselection.h"
 #include <iostream>
 
-void filterIndexByPostselectionRules(Index& idx, Request const & req) {
+void filterIndexByAttributeRequests(Index& idx, std::vector<AttributeRequest> const & req) {
   idx.erase( std::remove_if( idx.begin(), idx.end(),
     [&req](DatasetSpec const & dsetspec) {
       bool matches = true; //preselection has already matched..
-      // now, run over all attributeRequests: every request must match against
+      // run over all attributeRequests: every request must match against
       // any attribute:
-      for( auto const & attrreq : req ) {
+      for( auto const & attrreq : req) {
         bool thisReqIsFulfilled = false;
         for( auto const & attr : dsetspec.attributes )
           thisReqIsFulfilled |= attrreq.matches(attr);
@@ -17,9 +17,20 @@ void filterIndexByPostselectionRules(Index& idx, Request const & req) {
       }
       //remove if none of the attributes could match the conditions in the
       //request.
-      if( not matches ) {
-        std::cout << "attribute " << dsetspec.datasetname << " is removed in postfiltering." << std::endl;
-      }
-      return not matches;
+      return (not matches);
     }), idx.end());
+}
+void filterIndexByFileRequests(Index& idx, std::vector<FileRequest> const & req) {
+  idx.erase( std::remove_if( idx.begin(), idx.end(),
+    [&req](DatasetSpec const & dsetspec) {
+      bool matches = true;
+      for( auto const & filereq : req ) {
+        matches &= filereq->matches(dsetspec.file);
+      }
+      return (not matches);
+    }), idx.end());
+}
+void filterIndexByPostselectionRules(Index& idx, Request const & req) {
+  filterIndexByAttributeRequests(idx, req.attrrequests);
+  filterIndexByFileRequests(idx, req.filerequests);
 }

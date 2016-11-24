@@ -138,10 +138,10 @@ class Attribute {
     Value val;
 };
 
-class Condition {
+class AttributeCondition {
   public:
     virtual bool matches(Attribute const & attr, std::string const & reqname) const = 0;
-    virtual std::unique_ptr<Condition> clone() const = 0;
+    virtual std::unique_ptr<AttributeCondition> clone() const = 0;
     //TODO: further abstraction for cases that do not rely on SQL?
     //these sql request are only supposed to be a prefiltering, the final decision if
     //an attribute matches the condition is done by the routine matches!
@@ -156,7 +156,7 @@ class Condition {
 
 class AttributeRequest {
   public:
-    AttributeRequest(std::string const & name, Condition const & in) :
+    AttributeRequest(std::string const & name, AttributeCondition const & in) :
       reqname(name), cond(std::move(in.clone())) {}
     bool matches(Attribute const & attr) const { return cond->matches(attr, reqname); }
     std::string getName() const { return reqname; }
@@ -166,7 +166,7 @@ class AttributeRequest {
       return cond->getSqlValueDescription(valentryname); }
   private:
     std::string reqname;
-    std::unique_ptr<Condition> cond;
+    std::unique_ptr<AttributeCondition> cond;
 };
 struct File {
   std::string filename;
@@ -175,13 +175,25 @@ struct File {
     return a.filename == b.filename and a.mtime == b.mtime;
   }
 };
+class FileCondition {
+  public:
+    virtual bool matches(File const & file) const = 0;
+    virtual std::unique_ptr<FileCondition> clone() const = 0;
+};
+typedef std::unique_ptr<FileCondition> FileRequest;
 struct DatasetSpec {
   std::vector<Attribute> attributes;
   std::string datasetname;
   File file;
 };
+
 typedef std::vector<DatasetSpec> Index;
-typedef std::vector<AttributeRequest> Request;
+struct Request {
+  std::vector<AttributeRequest> attrrequests;
+  std::vector<FileRequest>      filerequests;
+  //TODO later:
+  //std::vector<LuaRequest>       luarequests;
+};
 
 std::list<File> getUniqueFiles(Index const & idx);
 

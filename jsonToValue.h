@@ -16,41 +16,59 @@ Value jsonValueToValue(Json::Value const & json) {
     throw std::runtime_error("json value is not representable as Value.");
   }
 }
-AttributeRequest parseRequest(Json::Value const & root, std::string const & name) {
+AttributeRequest parseAttributeRequest(Json::Value const & root, std::string const & name) {
   if( root[name].isArray() ) {
     throw std::runtime_error("array requests are not implemented.");
   }
   if( isRepresentableAsValue(root[name]) ) {
-    return AttributeRequest(name, Conditions::Equals(jsonValueToValue(root[name])));
+    return AttributeRequest(name, AttributeConditions::Equals(jsonValueToValue(root[name])));
   }
   else if( root[name].isMember("min") and root[name].isMember("max") ){
-    return AttributeRequest(name, Conditions::Range(
+    return AttributeRequest(name, AttributeConditions::Range(
             jsonValueToValue(root[name]["min"]),
             jsonValueToValue(root[name]["max"])));
   }
   else if( root[name].isMember("min") ){
-    return AttributeRequest(name, Conditions::Min(
+    return AttributeRequest(name, AttributeConditions::Min(
             jsonValueToValue(root[name]["min"])));
   }
   else if( root[name].isMember("max") ){
-    return AttributeRequest(name, Conditions::Max(
+    return AttributeRequest(name, AttributeConditions::Max(
             jsonValueToValue(root[name]["max"])));
   }
   else if( root[name].isMember("present") and root[name]["present"].isBool() ){
-    return AttributeRequest(name, Conditions::Present(root[name]["present"].asBool()));
+    return AttributeRequest(name, AttributeConditions::Present(root[name]["present"].asBool()));
   }
   else if( root[name].isMember("or") and root[name]["or"].isArray() ) {
     std::vector<Value> vec;
     for( auto const & elem : root[name]["or"] ) {
       vec.push_back(jsonValueToValue(elem));
     }
-    return AttributeRequest(name, Conditions::Or(vec));
+    return AttributeRequest(name, AttributeConditions::Or(vec));
   }
   else if( root[name].isMember("matches") and root[name]["matches"].isString() ) {
-    return AttributeRequest(name, Conditions::Matches(root[name]["matches"].asString()));
+    return AttributeRequest(name, AttributeConditions::Matches(root[name]["matches"].asString()));
   }
   else {
     throw std::runtime_error("json value is not parsable to Request.");
+  }
+}
+FileRequest parseFileRequest(Json::Value const & root, std::string const & name) {
+  assert(root.isMember(name));
+  if( name == "matches" and root[name].isString() ) {
+    return std::unique_ptr<FileConditions::NameMatches>(
+        new FileConditions::NameMatches(root["matches"].asString()));
+  } else if( name == "newer" and root[name].isInt() ) {
+    return std::unique_ptr<FileConditions::Newer>(
+        new FileConditions::Newer(root["newer"].asInt()));
+  } else if( name == "older" and root[name].isInt() ) {
+    return std::unique_ptr<FileConditions::Older>(
+        new FileConditions::Older(root["older"].asInt()));
+  } else if( name == "mtime" and root[name].isInt() ) {
+    return std::unique_ptr<FileConditions::Mtime>(
+        new FileConditions::Mtime(root["mtime"].asInt()));
+  } else {
+    throw std::runtime_error("unknown FileRequest (or arguments could not be handled)");
   }
 }
 Request queryToRequest(std::string const & query) {
@@ -60,8 +78,23 @@ Request queryToRequest(std::string const & query) {
   Json::Value root;
   sstr >> root;
   auto names = root.getMemberNames();
-  for( auto name : names )
-    req.push_back(parseRequest(root, name));
+  for( auto name : names ) {
+    if( name == std::string("attributes") ) {
+      //attribute request:
+      for( auto attrname : root["attributes"].getMemberNames())
+        req.attrrequests.push_back(parseAttributeRequest(root["attributes"], attrname));
+    } else if ( name == std::string("file") ) {
+      for( auto condname : root["file"].getMemberNames()) {
+        req.filerequests.push_back(parseFileRequest(root["file"], condname));
+      }
+    } else if ( name == std::string("luacode") ) {
+      throw std::runtime_error("lua postprocessing is not yet implemented.");
+    } else {
+      std::stringstream sstr;
+      sstr << "unknown request type: " << name << std::endl;
+      throw std::runtime_error(sstr.str());
+    }
+  }
 
   return req;
 }

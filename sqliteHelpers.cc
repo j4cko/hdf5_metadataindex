@@ -168,18 +168,18 @@ std::vector<int> getLocIdsMatchingPreSelection(sqlite3 *db, Request const & req)
   std::vector<int> res;
   std::string query;
   //for empty requests, return everything:
-  if( req.empty() )
+  if( req.attrrequests.empty() )
     query = "select locid from filelocations;";
   else {
     //build sql query:
     std::stringstream sstr;
     sstr << "select locid from filelocations where locid in ";
-    for( auto i = 0u; i < req.size(); ++i ){
+    for( auto i = 0u; i < req.attrrequests.size(); ++i ){
       sstr << "(select locid from attrvalues where " << 
-        req[i].getSqlValueDescription("value") << 
+        req.attrrequests[i].getSqlValueDescription("value") << 
         " and attrid=(select attrid from attributes where " << 
-        req[i].getSqlKeyDescription("attrname") << "))";
-      if( i < req.size() - 1 ) sstr << " and locid in ";
+        req.attrrequests[i].getSqlKeyDescription("attrname") << "))";
+      if( i < req.attrrequests.size() - 1 ) sstr << " and locid in ";
     }
     sstr << ";";
     query = sstr.str();
