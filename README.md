@@ -43,7 +43,8 @@ of the request set to a value for which the AttributeRequest returns true (and
 similarly for the file information). It may have additional attributes, 
 but all attributes in the request are set and have the right value.
 
-Requests can be currently be parsed from json.
+Requests can be currently be parsed from json. The keywords `attributes`, `file`
+and `luacode` (as soon as implemented) refer to the individual request sections.
 
 ### Evaluation hierarchy ###
 
@@ -110,22 +111,22 @@ For illustration, assume we have three nodes:
 ```
 {
   "attributes": {"x": 2, "y": 2, "z": 3, "t": 2},
-  "name": "targetnode1"
+  "file": "targetnode1"
 }
 {
   "attributes": {"x": 3, "y": 3 "z": 3, "t": 2},
-  "name": "targetnode2"
+  "file": "targetnode2"
 }
 {
   "attributes": {"x": 3, "y": 3 "z": 3, "t": 5},
-  "name": "targetnode3"
+  "file": "targetnode3"
 }
 ```
 then the request
 ```
 {
   "attributes": {"t": 2},
-  "name": "targetnode[0-9]*",
+  "file": {"matches": "targetnode[0-9]*"},
   "luacode": "function() return attributes.x^2+attributes.y^2+attributes.z^2==27 end"
 }
 ```
