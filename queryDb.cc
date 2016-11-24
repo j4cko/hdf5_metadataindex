@@ -35,13 +35,18 @@ int main(int argc, char** argv) {
   for( auto i = 0u; i < res.size(); ++i) {
     std::cout << res[i] << " " << files[i] << std::endl; }
 
-  //check one of the files for mtime:
-  auto mtime = H5DataHelpers::getFileModificationTime(files.back());
-  auto mtimeDb = getFileModificationTime(db, files.back());
-  if( mtime - mtimeDb > 0 )
-    std::cerr << "file \"" << files.back() << "\" has changed since db creation." << std::endl;
-  else
-    std::cout << "file \"" << files.back() << "\" probably in sync with db." << std::endl;
+  if( not H5DataHelpers::h5_file_exists(files.back()) )
+    std::cerr << "original file no longer exists at this place: " << files.back() << std::endl;
+  else {
+    //check one of the files for mtime:
+    auto mtime = H5DataHelpers::getFileModificationTime(files.back());
+    auto mtimeDb = getFileModificationTime(db, files.back());
+    if( mtime - mtimeDb > 0 )
+      std::cerr << "file \"" << files.back() << "\" has changed since db creation." << std::endl;
+    else
+      std::cout << "file \"" << files.back() << "\" probably in sync with db." << std::endl;
+  }
+
   sqlite3_close(db);
 
   return 0;
