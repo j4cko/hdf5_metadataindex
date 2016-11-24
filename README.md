@@ -13,66 +13,84 @@ Attributes are extracted and saved to a database. After indexing,
 a request can be processed in constant time and returns a full path
 to the requested dataset without even opening the hdf5 file.
 
-## Requests ##
+## DatasetSpecifications and Atomic Datatypes ##
 
-### Atomic Datatypes ###
-
-Attributes hold values that compare to values set in the target files. Requests
-distinguish only between
+Each Dataset is represented by a `DatasetSpec`, holding its attributes and file
+information.
+`Attributes` hold single, specific values, which can be of one of three types:
 
   * **numeric**
   * **boolean**
   * **string**
 
-types and lists thereof.
+and lists thereof (with the exception of strings, currently).
 
+## Requests ##
 
-### At the moment ###
+A request consists of several sections (each can be omitted)
 
-A request is a list of AttributeRequests with certain conditions. More than one
-dataset can match a request. Datasets can have attributes that are not 
-part of the request (for which no corresponding AttributeRequest exists).
+  * `AttributeRequest`s demand that attributes fulfill certain conditions,
+  * `FileRequest`s can be used to filter for file name and date,
+  * `LuaRequest`s are currently not implemented but will allow to have more
+    complex logic in requests.
+
+A request is a list of `Conditions`. More than one dataset can match a request. 
+Datasets can have attributes set that are not part of the request 
+(for which no corresponding AttributeRequest exists).
 
 In other words: A dataset matching a request has all the attributes
-of the request set to a value for which the AttributeRequest returns true.
-It may have additional attributes, but all attributes in the request are set 
-and have the right value.
+of the request set to a value for which the AttributeRequest returns true (and
+similarly for the file information). It may have additional attributes, 
+but all attributes in the request are set and have the right value.
 
-*Wildcarding* is naturally done by not specifying the attribute in the
-request.
+Requests can be currently be parsed from json.
 
-Currently, possible attribute requests are:
+### Evaluation hierarchy ###
 
-  * `{"attrname": 3}` checks if the attribute named `attrname` is set to 3.
-  * `{"attrname": {"min": 2}}` checks if the attribute `attrname` is set to a
-    value larger or equal to 2.
-  * `{"attrname": {"max": 2}}` checks if the attribute `attrname` is set to a
-    value smaller or equal to 2.
-  * `{"attrname": {"min": 1, "max": 3}}` checks if the attribute `attrname` is 
-    set to a value between 1 and 3 (boundaries included).
-  * `{"attrname": {"or": [1,2,3]}}` check if the attribute `attrname` is set to 
-    one of the values 1, 2 or 3.
-  * `{"attrname": {"present": true}}` check if the attribute `attrname` is
-    present and set to any value. Note that the reverse, 
+The order in which requests are evaluated is not fixed: This is no problem since
+requests are connected by an (implicit) "and" (all requests need to be
+fulfilled). This leaves room for performance considerations: In practice, some
+kind of "preselection", only evaluating a subset of all requests, can be done,
+before a "postselection" will only be evaluated on the datasets that match the
+preselection rules. For example, lua code would only be executed on the datasets
+that fulfill all other requirements. Thus, from the user perspective, it might
+be beneficial to specify as many requests as possible (because only the
+potentially fastest could be evaluated).
+
+### Examples ###
+
+  * `{"attributes": {"attrname": 3}}` checks if the attribute named `attrname` 
+    exists and is set to 3.
+  * `{"attributes": {"attrname": {"min": 2}}` checks if the attribute `attrname`
+    exists and is set to a value larger or equal to 2.
+  * similarly: `{"attributes": {"attrname": {"max": 2}}}`
+  * `{"attributes": {"attrname": {"min": 1, "max": 3}}}` checks if the attribute 
+    `attrname` is set to a value between 1 and 3 (boundaries included).
+  * `{"attributes": {"attrname": {"or": [1,2,3]}}}` check if the attribute 
+    `attrname` is set to one of the values 1, 2 or 3.
+  * `{"attributes": {"attrname": {"present": true}}}` check if the attribute 
+    `attrname` is present and set to any value. Note that the reverse, 
     `{"attrname": {"present": false}}` which would check for the absence of an
     attribute, is currently not implemented.
+  * `{"attributes": {"attrname": {"not": 1}}}` returns all datasets that have
+    the attribute `attrname` set but not to the value 1.
+  * `{"attributes": {"attrname": {"not": 1}, "attrname": {"not": 2}}}` returns 
+    all datasets that have the attribute `attrname` set but not to the values 1
+    nor 2.
+  * `{"attributes": {"attrname": {"matches": ".*numerated[0-9]*"}}}`: also
+    regexes work (also on numeric types!)
+  * `{"file": {"newer": 1480004355}}` requests modification time of the datafile
+    to be newer than Do 24. Nov 17:19:13 CET 2016
+  * similarly, `older` for "older than" and `mtime` for "exactly from" work for
+    modification times.
+  * `{"file": {"matches": ".*H101r001n1.h5$"}}` would return all datasets that
+    can be found in files that end with this string (might be useful to restrict
+    to certain configs). Of course any regex works.
+  * Several sections can be combined: `{"attribute": {"attrname": 3}, "file":
+    {"matches": ".*outputfile"}}` returns all datasets in files that match the
+    regex and have an attribute `attrname` set to 3.
 
-### Future ###
-
-In JSON, a request could look like this:
-```
-{
-  "attributes": {"attr1": 1, "attr2": "example"},
-  "name": ".*/measurementname"
-}
-```
-This request returns all nodes (entities, datasets) which have **all**
-attributes of the request set to the values specified in the request.
-
-The additional (optional) `name` tag is a regex that must match the name of the
-node.
-
-#### Additional attribute requests ####
+#### Future ideas: Additional attribute requests ####
 
 In addition to the above requests, one could also have:
 
@@ -82,14 +100,13 @@ In addition to the above requests, one could also have:
     the attribute `attr` set to the smallest or largest value (compared to all
     other nodes which hold this attribute). The values `true` are required.
 
-#### Lua ####
+#### Future ideas: Lua ####
 
-If needed, this could be complemented by another element, `luacode`, which is
+`luacode` as an additional request section could be added which is
 executed (only) on every node that fulfills the requirements of the other 
-specifiers. It gets the specifications of the node as tables.
+specifiers. It gets the DatasetSpec of the node as tables.
 
-#### Example ####
-Assume we have three nodes:
+For illustration, assume we have three nodes:
 ```
 {
   "attributes": {"x": 2, "y": 2, "z": 3, "t": 2},
@@ -128,27 +145,17 @@ Index a hdf5 file:
 ```./indexHdf5 hdf5file.h5 dbfile.sqlite```
 
 The database can then be queried with the `queryDb` tool:
-```./queryDb dbfile.sqlite '{"px" : 1, "py" : 0, "pz" : 0}'```
+```./queryDb dbfile.sqlite '{"attributes": {"px" : 1, "py" : 0, "pz" : 0}}'```
 (this will return all datasets that have the attributes `px`, `py` and `pz` set
-to these values)
+to these values, see above for more examples).
 
-## maybe some time... ##
-
-  * **more logic in requests**: 
-    specifiers like "not", "one-of", etc. to attributes might be 
-    interesting. Also ranges are a natural extension.
-  * **notice if the file has changed**
-    save the file mtime and checksum in the database and 
-    update / refuse if the index is not in sync with the file.
-  * **inter-file support**
-    make databases cover several files: The database can then
-    also be used to create file lists. 
-    Example: "get all messpec data (kappa=...) of H101" returns a list
-    of files and datasets that return relevant data.
-  * **regex matching on dataset names**
-  * **lua-post-selection**:
-    after preselection by matching of the attributes, lua code is executed on
-    every hit. If it returns `true`, the hit is returned, otherwise it is
-    discarded.
-  * **HDF5BaseTable**
-    (as an object in lua?)
+## Other ToDo ##
+  * provide a better **CLI interface**:
+    - check for changes in files (easily done with the mtime that is saved)
+    - output formats: print all results with all attributes, print only
+      filenames, only datasetnames, both together, ...
+  * **HDF5 tables** (as written out by qdp): Tables are often stored along with
+    the data (in these cases, a group holds two datasets, `table[0-9]*` and
+    `data[0-9]*`). This is important information on the data layout in the
+    dataset and is in principle metadata. Evaluating these tables could return
+    information of hyperslab, blocks and so on that need to be read.
