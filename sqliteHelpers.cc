@@ -22,7 +22,7 @@ static int getIntCallback(void *intvar, int argc, char** argv, char** azColName)
   return 0;
 }
 static int dsetspecFileinfoCallback(void *var, int argc, char** argv, char** azColName) {
-  DatasetSpec* dsetspec = (DatasetSpec*) var;
+  DatasetSpec* dsetspec = static_cast<DatasetSpec*>(var);
   if( argc != 3 ) return -1;
   for(int i = 0; i < argc; i++) {
     if( std::string(azColName[i]) == "locname" ) dsetspec->datasetname = std::string(argv[i]);
@@ -212,7 +212,7 @@ std::vector<std::string> idsToDsetnames(sqlite3 *db,
   }
   return res;
 }
-int getFileModificationTime(sqlite3 *db, std::string filename) {
+int getFileModificationTime(sqlite3 *db, std::string const & filename) {
   int mtimeDb = 0;
   std::stringstream sstr;
   sstr << "select mtime from files where fname=\"" << filename << "\";";

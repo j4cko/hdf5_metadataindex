@@ -12,5 +12,5 @@ std::vector<std::string> idsToDsetnames(sqlite3 *db, std::vector<int> const & lo
 std::vector<std::string> idsToFilenames(sqlite3 *db, std::vector<int> const & locids);
 std::vector<int> getLocIdsMatchingPreSelection(sqlite3 *db, Request const & req);
 Index idsToIndex(sqlite3 *db, std::vector<int> locids);
-int getFileModificationTime(sqlite3 *db, std::string filename);
+int getFileModificationTime(sqlite3 *db, std::string const & filename);
 #endif

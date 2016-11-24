@@ -8,13 +8,13 @@
 namespace AttributeConditions {
 class Equals : public AttributeCondition { 
   public:
-    Equals(Value val_) : val(val_) {}
+    explicit Equals(Value val_) : val(val_) {}
     bool matches(Attribute const & attr, std::string const & reqname) const {
       return attr.getValue() == val and attr.getName() == reqname; }
     std::unique_ptr<AttributeCondition> clone() const { 
       //make_unique is missing in C++11:
       return std::unique_ptr<Equals>(new Equals(val)); }
-    std::string getSqlValueDescription(std::string const & valentryname) const { 
+    std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
       if( val.getType() == Type::STRING )
         sstr << valentryname << " = '" << val << "' ";
@@ -27,7 +27,7 @@ class Equals : public AttributeCondition {
 };
 class NotEquals : public AttributeCondition { 
   public:
-    NotEquals(Value val_) : val(val_) {}
+    explicit NotEquals(Value val_) : val(val_) {}
     bool matches(Attribute const & attr, std::string const & reqname) const {
       if( attr.getType() == val.getType() and attr.getName() == reqname 
           and (not (attr.getValue() == val)) ) return true;
@@ -36,7 +36,7 @@ class NotEquals : public AttributeCondition {
     std::unique_ptr<AttributeCondition> clone() const { 
       //make_unique is missing in C++11:
       return std::unique_ptr<NotEquals>(new NotEquals(val)); }
-    std::string getSqlValueDescription(std::string const & valentryname) const { 
+    std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
       if( val.getType() == Type::STRING )
         sstr << valentryname << " != '" << val << "' ";
@@ -55,7 +55,7 @@ class Range: public AttributeCondition {
     std::unique_ptr<AttributeCondition> clone() const { 
       //make_unique is missing in C++11:
       return std::unique_ptr<Range>(new Range(min, max)); }
-    std::string getSqlValueDescription(std::string const & valentryname) const { 
+    std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
       assert(min.getType() == max.getType());
       if( min.getType() == Type::STRING )
@@ -70,13 +70,13 @@ class Range: public AttributeCondition {
 
 class Min : public AttributeCondition { 
   public:
-    Min(Value min_) : min(min_) {}
+    explicit Min(Value min_) : min(min_) {}
     bool matches(Attribute const & attr, std::string const & reqname) const {
       return (attr.getValue() >= min and attr.getName() == reqname); }
     std::unique_ptr<AttributeCondition> clone() const { 
       //make_unique is missing in C++11:
       return std::unique_ptr<Min>(new Min(min)); }
-    std::string getSqlValueDescription(std::string const & valentryname) const { 
+    std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
       if( min.getType() == Type::STRING )
         sstr << valentryname << " >= '" << min << "' ";
@@ -89,13 +89,13 @@ class Min : public AttributeCondition {
 };
 class Max : public AttributeCondition { 
   public:
-    Max(Value max_) : max(max_) {}
+    explicit Max(Value max_) : max(max_) {}
     bool matches(Attribute const & attr, std::string const & reqname) const {
       return (attr.getValue() >= max and attr.getName() == reqname); }
     std::unique_ptr<AttributeCondition> clone() const { 
       //make_unique is missing in C++11:
       return std::unique_ptr<Max>(new Max(max)); }
-    std::string getSqlValueDescription(std::string const & valentryname) const { 
+    std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
       if( max.getType() == Type::STRING )
         sstr << valentryname << " <= '" << max << "' ";
@@ -108,7 +108,7 @@ class Max : public AttributeCondition {
 };
 class Present : public AttributeCondition { 
   public:
-    Present (bool present_) : present(present_) {
+    explicit Present (bool present_) : present(present_) {
       if( not present ) 
         throw std::runtime_error("Present(AttributeCondition): present == false is not implemented.");
     }
@@ -122,7 +122,7 @@ class Present : public AttributeCondition {
 };
 class Or : public AttributeCondition {
   public:
-    Or(std::vector<Value> values) : vals(values) {}
+    explicit Or(std::vector<Value> const & values) : vals(values) {}
     bool matches(Attribute const & attr, std::string const & reqname) const {
       bool match = false;
       for( auto const & val : vals )
@@ -132,7 +132,7 @@ class Or : public AttributeCondition {
     std::unique_ptr<AttributeCondition> clone() const { 
       //make_unique is missing in C++11:
       return std::unique_ptr<Or>(new Or(vals)); }
-    std::string getSqlValueDescription(std::string const & valentryname) const { 
+    std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
       assert(vals.size() > 0);
       Type typecheck = vals.front();
@@ -155,8 +155,8 @@ class Or : public AttributeCondition {
 };
 class Matches : public AttributeCondition { 
   public:
-    Matches(std::string regex_) : regex(std::regex(regex_)) {}
-    Matches(std::regex regex_) : regex(regex_) {}
+    explicit Matches(std::string const & regex_) : regex(std::regex(regex_)) {}
+    explicit Matches(std::regex const & regex_) : regex(regex_) {}
     bool matches(Attribute const & attr, std::string const & reqname) const {
       std::stringstream sstr;
       sstr << attr.getValue();
@@ -173,8 +173,8 @@ class Matches : public AttributeCondition {
 namespace FileConditions {
 class NameMatches : public FileCondition {
   public:
-    NameMatches(std::string regex_) : regex(std::regex(regex_)) {}
-    NameMatches(std::regex regex_) : regex(regex_) {}
+    explicit NameMatches(std::string const & regex_) : regex(std::regex(regex_)) {}
+    explicit NameMatches(std::regex const & regex_) : regex(regex_) {}
     bool matches(File const & file) const {
       return std::regex_match(file.filename, regex);
     }
@@ -186,7 +186,7 @@ class NameMatches : public FileCondition {
 };
 class Older: public FileCondition {
   public:
-    Older(int mtime_) : mtime(mtime_) {}
+    explicit Older(int mtime_) : mtime(mtime_) {}
     bool matches(File const & file) const {
       return file.mtime < mtime;
     }
@@ -198,7 +198,7 @@ class Older: public FileCondition {
 };
 class Newer: public FileCondition {
   public:
-    Newer(int mtime_) : mtime(mtime_) {}
+    explicit Newer(int mtime_) : mtime(mtime_) {}
     bool matches(File const & file) const {
       return file.mtime > mtime;
     }
@@ -210,7 +210,7 @@ class Newer: public FileCondition {
 };
 class Mtime : public FileCondition {
   public:
-    Mtime(int mtime_) : mtime(mtime_) {}
+    explicit Mtime(int mtime_) : mtime(mtime_) {}
     bool matches(File const & file) const {
       return file.mtime == mtime;
     }

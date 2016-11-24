@@ -74,7 +74,7 @@ private:
   struct Concept {
     virtual ~Concept() {}
     Concept() = delete;
-    Concept(std::type_info const &ti_) : ti(ti_) {}
+    explicit Concept(std::type_info const &ti_) : ti(ti_) {}
     virtual Concept *clone() const = 0;
     virtual void print(std::ostream& os) const = 0;
     virtual bool equals(Concept const * other) const = 0;
