@@ -5,6 +5,7 @@ set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/"
 
 add_executable(indexHdf5 "${CMAKE_SOURCE_DIR}/src/indexer.cc" src/attributes.cc src/h5helpers.cc src/indexHdf5.cc src/sqliteHelpers.cc )
 add_executable(queryDb "${CMAKE_SOURCE_DIR}/src/queryDb.cc" src/indexHdf5.cc src/attributes.cc src/h5helpers.cc src/sqliteHelpers.cc src/postselection.cc )
+add_executable(tests src/tests.cc src/indexHdf5.cc src/attributes.cc src/h5helpers.cc src/sqliteHelpers.cc src/postselection.cc )
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 find_package (JsonCpp REQUIRED)
@@ -21,3 +22,4 @@ set(LIBS ${LIBS} ${SQLITE3_LIBRARIES})
 
 target_link_libraries( indexHdf5 ${LIBS} )
 target_link_libraries( queryDb ${LIBS} )
+target_link_libraries( tests ${LIBS} )
