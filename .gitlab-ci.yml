@@ -10,7 +10,7 @@ build-job:
       - yum -y install sqlite-devel jsoncpp-devel
       - mkdir install
       - cmake -DCMAKE_INSTALL_PREFIX=./install -DJSONCPP_ROOT_DIR=/usr/include/jsoncpp
-      - make -j 2 install
+      - make -j 2 install VERBOSE=1
     artifacts:
         paths:
           - install/
