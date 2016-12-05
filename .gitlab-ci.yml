@@ -7,6 +7,7 @@ stages:
 build-job:
     stage: build
     script:
+      - yum -y install hdf5 jsoncpp
       - mkdir install
       - cmake -DCMAKE_INSTALL_PREFIX=./install
       - make -j 2 install
