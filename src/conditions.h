@@ -135,7 +135,7 @@ class Or : public AttributeCondition {
     std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
       assert(vals.size() > 0);
-      Type typecheck = vals.front();
+      Type typecheck = vals.front().getType();
       sstr << "( ";
       for( auto i = 0u; i < vals.size() - 1; i++ ){
         assert(vals[i].getType() == typecheck);

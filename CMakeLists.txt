@@ -23,3 +23,7 @@ set(LIBS ${LIBS} ${SQLITE3_LIBRARIES})
 target_link_libraries( indexHdf5 ${LIBS} )
 target_link_libraries( queryDb ${LIBS} )
 target_link_libraries( tests ${LIBS} )
+
+install(TARGETS indexHdf5 queryDb tests
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib)

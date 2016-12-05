@@ -20,27 +20,71 @@ Type typeFromTypeid(std::type_info const & tinfo);
 
 class Value {
 public:
-  template <typename T>
-  Value(T const &content_) : content(new Model<T>(content_)), 
-                             type(typeFromTypeid(typeid(T))) {}
   ~Value() { delete content; }
+  Value(double val) : content(new NumericModel(val)), type(Type::NUMERIC) {}
+  Value(int val) : content(new NumericModel((double)val)), type(Type::NUMERIC) {}
+  Value(std::size_t val) : content(new NumericModel((double)val)), type(Type::NUMERIC) {}
+  Value(bool val) : content(new BooleanModel(val)), type(Type::BOOLEAN) {}
+  Value(std::string val) : content(new StringModel(val)), type(Type::STRING) {}
+  Value(char const * val) : content(new StringModel(std::string(val))), type(Type::STRING) {}
   Value(Value const &rr) : content(rr.content->clone()), type(rr.getType()) {}
   Value &operator=(Value rr) {
-    if (content->ti.hash_code() != rr.content->ti.hash_code())
-      throw std::runtime_error("Assigning Values of different types!");
+    if( rr.getType() != getType() )
+      throw std::runtime_error("Type-changing assignment.");
     std::swap(content, rr.content);
     return *this;
   }
-  template <typename T>
-  operator T() const { return this->get<T>(); }
-  Type getType() const { return type; }
-  bool typeMatches(std::type_info const &tinfo) const {
-    return content->ti.hash_code() == tinfo.hash_code();
+  /* These type conversion operators could be useful, but might turn the code
+   * less explicit... 
+  operator double() const { 
+    if( type != Type::NUMERIC ) 
+      throw std::runtime_error("Value is not numeric.");
+    return getNumeric();
   }
-  template <typename Tout> Tout get() const {
-    if (typeid(Tout).hash_code() != content->ti.hash_code())
-      throw std::runtime_error("Value.get(): types do not match.");
+  operator bool() const { 
+    if( type != Type::BOOLEAN ) 
+      throw std::runtime_error("Value is not boolean.");
+    return getBool();
+  }
+  operator std::string() const { 
+    if( type != Type::STRING ) 
+      throw std::runtime_error("Value is not string.");
+    return getString();
+  }
+  */
+  Type getType() const { return type; }
+  /*template <typename Tout> Tout get() const {
     return (Tout)((Model<Tout> *)content)->object;
+  }*/
+  double getNumeric() const { 
+    if( getType() != Type::NUMERIC ) 
+      throw std::runtime_error("Value must be NUMERIC to get a numeric value.");
+    return dynamic_cast<NumericModel const *>(content)->object;
+  }
+  bool getBool() const { 
+    if( getType() != Type::BOOLEAN) 
+      throw std::runtime_error("Value must be BOOLEAN to get a bool value.");
+    return dynamic_cast<BooleanModel const *>(content)->object;
+  }
+  std::string getString() const { 
+    if( getType() != Type::STRING) 
+      throw std::runtime_error("Value must be STRING to get a string value.");
+    return dynamic_cast<StringModel const *>(content)->object;
+  }
+  double & getNumeric() { 
+    if( getType() != Type::NUMERIC ) 
+      throw std::runtime_error("Value must be NUMERIC to get a numeric value.");
+    return dynamic_cast<NumericModel *>(content)->object;
+  }
+  bool & getBool() { 
+    if( getType() != Type::BOOLEAN) 
+      throw std::runtime_error("Value must be BOOLEAN to get a bool value.");
+    return dynamic_cast<BooleanModel *>(content)->object;
+  }
+  std::string & getString() { 
+    if( getType() != Type::STRING) 
+      throw std::runtime_error("Value must be STRING to get a string value.");
+    return dynamic_cast<StringModel *>(content)->object;
   }
   friend std::ostream& operator<<(std::ostream& os, Value const & val) {
     val.content->print(os);
@@ -48,73 +92,203 @@ public:
   }
   friend bool operator==(Value const & a, Value const & b) {
     if( a.getType() != b.getType() ) return false;
-    return a.content->equals(b.content);
+    switch( a.getType() ) {
+      case Type::NUMERIC:
+        return a.getNumeric() == b.getNumeric();
+      case Type::STRING:
+        return a.getString() == b.getString();
+      case Type::BOOLEAN:
+        return a.getBool() == b.getBool();
+      default:
+        throw std::runtime_error("unsupported type for operator==");
+    }
   }
   friend bool operator<(Value const & a, Value const & b) {
     if( a.getType() != b.getType() ) 
       throw std::runtime_error("operator<: comparing Values of different type.");
-    return a.content->less(b.content);
+    switch( a.getType() ) {
+      case Type::NUMERIC:
+        return a.getNumeric() < b.getNumeric();
+      case Type::STRING:
+        return a.getString() < b.getString();
+      default:
+        throw std::runtime_error("unsupported type for operator<");
+    }
   }
   friend bool operator<=(Value const & a, Value const & b) {
     if( a.getType() != b.getType() ) 
-      throw std::runtime_error("operator<: comparing Values of different type.");
-    return a.content->lessEqual(b.content);
+      throw std::runtime_error("operator<=: comparing Values of different type.");
+    switch( a.getType() ) {
+      case Type::NUMERIC:
+        return a.getNumeric() <= b.getNumeric();
+      case Type::STRING:
+        return a.getString() <= b.getString();
+      default:
+        throw std::runtime_error("unsupported type for operator<=");
+    }
   }
   friend bool operator>(Value const & a, Value const & b) {
     if( a.getType() != b.getType() ) 
-      throw std::runtime_error("operator<: comparing Values of different type.");
-    return a.content->greater(b.content);
+      throw std::runtime_error("operator>: comparing Values of different type.");
+    switch( a.getType() ) {
+      case Type::NUMERIC:
+        return a.getNumeric() > b.getNumeric();
+      case Type::STRING:
+        return a.getString() > b.getString();
+      default:
+        throw std::runtime_error("unsupported type for operator>");
+    }
   }
   friend bool operator>=(Value const & a, Value const & b) {
     if( a.getType() != b.getType() ) 
-      throw std::runtime_error("operator<: comparing Values of different type.");
-    return a.content->greaterEqual(b.content);
+      throw std::runtime_error("operator>: comparing Values of different type.");
+    switch( a.getType() ) {
+      case Type::NUMERIC:
+        return a.getNumeric() >= b.getNumeric();
+      case Type::STRING:
+        return a.getString() >= b.getString();
+      default:
+        throw std::runtime_error("unsupported type for operator>=");
+    }
   }
+  Value& operator+=(Value const & other) {
+    if( getType() != other.getType() )
+      throw std::runtime_error("operator+=: cannot add different types.");
+    switch( getType() ) {
+      case Type::NUMERIC:
+        getNumeric() += other.getNumeric();
+        break;
+      case Type::STRING:
+        getString() += other.getString();
+        break;
+      default:
+        throw std::runtime_error("operator+=: only defined for NUMERIC or STRING.");
+    }
+    return *this;
+  }
+  friend Value operator+(Value const & a, Value const & b) {
+    Value res(a);
+    res += b;
+    return res;
+  }
+  Value& operator-=(Value const & other) {
+    if( getType() != other.getType() )
+      throw std::runtime_error("operator-=: cannot subtract different types.");
+    switch( getType() ) {
+      case Type::NUMERIC:
+        getNumeric() -= other.getNumeric();
+        break;
+      default:
+        throw std::runtime_error("operator-=: only defined for NUMERIC.");
+    }
+    return *this;
+  }
+  friend Value operator-(Value const & a, Value const & b) {
+    Value res(a);
+    res -= b;
+    return res;
+  }
+  Value& operator*=(Value const & other) {
+    if( getType() != other.getType() )
+      throw std::runtime_error("operator*=: cannot multiply different types.");
+    switch( getType() ) {
+      case Type::NUMERIC:
+        getNumeric() *= other.getNumeric();
+        break;
+      default:
+        throw std::runtime_error("operator*=: only defined for NUMERIC.");
+    }
+    return *this;
+  }
+  friend Value operator*(Value const & a, Value const & b) {
+    Value res(a);
+    res *= b;
+    return res;
+  }
+  Value& operator/=(Value const & other) {
+    if( getType() != other.getType() )
+      throw std::runtime_error("operator/=: cannot divide different types.");
+    switch( getType() ) {
+      case Type::NUMERIC:
+        getNumeric() /= other.getNumeric();
+        break;
+      default:
+        throw std::runtime_error("operator/=: only defined for NUMERIC.");
+    }
+    return *this;
+  }
+  friend Value operator/(Value const & a, Value const & b) {
+    Value res(a);
+    res /= b;
+    return res;
+  }
+  
+  /*
+  Value& operator-=(Value const & other) {
+    if( getType() != other.getType() )
+      throw std::runtime_error("operator-=: cannot subtract different types.");
+    if( getType() != Type::NUMERIC )
+      throw std::runtime_error("operator-=: only defined for NUMERIC.");
+    content->subtract(other.content);
+    return *this;
+  }
+  friend Value operator-(Value const & a, Value const & b) {
+    Value res(a);
+    res -= b;
+    return res;
+  }
+  Value& operator*=(Value const & other) {
+    if( getType() != other.getType() )
+      throw std::runtime_error("operator*=: cannot multiply different types.");
+    if( getType() != Type::NUMERIC )
+      throw std::runtime_error("operator*=: only defined for NUMERIC.");
+    content->multiply(other.content);
+    return *this;
+  }
+  friend Value operator*(Value const & a, Value const & b) {
+    Value res(a);
+    res *= b;
+    return res;
+  }
+  Value& operator/=(Value const & other) {
+    if( getType() != other.getType() )
+      throw std::runtime_error("operator/=: cannot multiply different types.");
+    if( getType() != Type::NUMERIC )
+      throw std::runtime_error("operator/=: only defined for NUMERIC.");
+    content->divide(other.content);
+    return *this;
+  }
+  friend Value operator/(Value const & a, Value const & b) {
+    Value res(a);
+    res /= b;
+    return res;
+  }
+  */
 private:
   struct Concept {
     virtual ~Concept() {}
-    Concept() = delete;
-    explicit Concept(std::type_info const &ti_) : ti(ti_) {}
+    Concept() = default;
     virtual Concept *clone() const = 0;
     virtual void print(std::ostream& os) const = 0;
-    virtual bool equals(Concept const * other) const = 0;
-    virtual bool less(Concept const * other) const = 0;
-    virtual bool lessEqual(Concept const * other) const = 0;
-    virtual bool greater(Concept const * other) const = 0;
-    virtual bool greaterEqual(Concept const * other) const = 0;
-    std::type_info const &ti;
   };
 
-  template <typename T> struct Model : Concept {
-    Model(T const &value) : Concept(typeid(T)), object(value) {}
+  struct StringModel : Concept {
+    StringModel(std::string const & value) : Concept(), object(value) {}
+    Concept *clone() const { return new StringModel(object); }
     void print(std::ostream& os) const { os << object; }
-    bool equals(Concept const * other) const {
-      if( other->ti.hash_code() != ti.hash_code() ) return false;
-      //now, a cast is safe:
-      return (object == static_cast<Model<T> const*>(other)->object);
-    }
-    bool less(Concept const * other) const {
-      if( other->ti.hash_code() != ti.hash_code() ) return false;
-      //now, a cast is safe:
-      return (object < static_cast<Model<T> const*>(other)->object);
-    }
-    bool lessEqual(Concept const * other) const {
-      if( other->ti.hash_code() != ti.hash_code() ) return false;
-      //now, a cast is safe:
-      return (object <= static_cast<Model<T> const*>(other)->object);
-    }
-    bool greater(Concept const * other) const {
-      if( other->ti.hash_code() != ti.hash_code() ) return false;
-      //now, a cast is safe:
-      return (object > static_cast<Model<T> const*>(other)->object);
-    }
-    bool greaterEqual(Concept const * other) const {
-      if( other->ti.hash_code() != ti.hash_code() ) return false;
-      //now, a cast is safe:
-      return (object >= static_cast<Model<T> const*>(other)->object);
-    }
-    Concept *clone() const { return new Model(object); }
-    T object;
+    std::string object;
+  };
+  struct BooleanModel : Concept {
+    Concept *clone() const { return new BooleanModel(object); }
+    void print(std::ostream& os) const { os << object; }
+    BooleanModel(bool const & value) : Concept(), object(value) {}
+    bool object;
+  };
+  struct NumericModel : Concept {
+    Concept *clone() const { return new NumericModel(object); }
+    void print(std::ostream& os) const { os << object; }
+    NumericModel(double const &value) : Concept(), object(value) {}
+    double object;
   };
   Concept *content;
   Type type;
@@ -124,9 +298,7 @@ class Attribute {
   public:
     template<typename T>
     Attribute(std::string const & name, T const & in) : 
-      attrname(name), val(in) {
-      assert(val.typeMatches(typeid(T)));
-    }
+      attrname(name), val(in) { }
     Type getType() const { return val.getType(); }
     Value getValue() const { return val; };
     std::string getName() const { return attrname; };
