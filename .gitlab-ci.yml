@@ -7,7 +7,7 @@ stages:
 build-job:
     stage: build
     script:
-      - yum -y install sqlite jsoncpp
+      - yum -y install sqlite-devel jsoncpp-devel
       - mkdir install
       - cmake -DCMAKE_INSTALL_PREFIX=./install
       - make -j 2 install
