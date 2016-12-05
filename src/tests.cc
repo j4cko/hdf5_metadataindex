@@ -48,6 +48,13 @@ int main( int argc, char** argv ) {
   SIMPLETEST( "type of Value(3) == numeric?", Value bla(3), bla.getType() == Type::NUMERIC );
   SIMPLETEST( "type of Value(\"test\") == string?", Value bla("test"), bla.getType() == Type::STRING );
   SHOULDTHROWTEST( "Adding a number and a string should throw", Value bla(2); Value blub("test"); bla + blub; );
+  {
+    std::map<std::string, Value> valmap; 
+    valmap.insert({"test", Value(3)});
+    valmap.insert({"othertest", Value("testval")});
+    Value arr(valmap);
+    SIMPLETEST( "arrays of values, constructed in a simple way: ", , (arr["test"] == Value(3) && arr["othertest"] == Value("testval")) );
+  }
 
   std::cout << "=================================================" << std::endl;
   std::cout << "|| Attribute class                             ||"<< std::endl;

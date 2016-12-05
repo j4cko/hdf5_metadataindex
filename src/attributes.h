@@ -5,14 +5,16 @@
 #include <typeinfo>
 #include <stdexcept>
 #include <cassert>
-#include <ostream>
+#include <iostream>
 #include <memory>
 #include <list>
+#include <map>
 
 enum class Type {
   NUMERIC,
   BOOLEAN,
-  STRING
+  STRING,
+  ARRAY
 };
 
 std::string typeToString(Type const & type);
@@ -27,6 +29,7 @@ public:
   Value(bool val) : content(new BooleanModel(val)), type(Type::BOOLEAN) {}
   Value(std::string val) : content(new StringModel(val)), type(Type::STRING) {}
   Value(char const * val) : content(new StringModel(std::string(val))), type(Type::STRING) {}
+  Value(std::map<std::string, Value> const & val) : content(new ArrayModel(val)), type(Type::ARRAY) {}
   Value(Value const &rr) : content(rr.content->clone()), type(rr.getType()) {}
   Value &operator=(Value rr) {
     if( rr.getType() != getType() )
@@ -66,6 +69,11 @@ public:
       throw std::runtime_error("Value must be BOOLEAN to get a bool value.");
     return dynamic_cast<BooleanModel const *>(content)->object;
   }
+  std::map<std::string, Value> getMap() const {
+    if( getType() != Type::ARRAY)
+      throw std::runtime_error("Value must be ARRAY to get a value from it.");
+    return dynamic_cast<ArrayModel const *>(content)->object;
+  }
   std::string getString() const { 
     if( getType() != Type::STRING) 
       throw std::runtime_error("Value must be STRING to get a string value.");
@@ -85,6 +93,11 @@ public:
     if( getType() != Type::STRING) 
       throw std::runtime_error("Value must be STRING to get a string value.");
     return dynamic_cast<StringModel *>(content)->object;
+  }
+  std::map<std::string, Value> getMap() {
+    if( getType() != Type::ARRAY)
+      throw std::runtime_error("Value must be ARRAY to get a value from it.");
+    return dynamic_cast<ArrayModel *>(content)->object;
   }
   friend std::ostream& operator<<(std::ostream& os, Value const & val) {
     val.content->print(os);
@@ -182,6 +195,14 @@ public:
         throw std::runtime_error("operator-=: only defined for NUMERIC.");
     }
     return *this;
+  }
+  Value operator[](std::string const & key) {
+    if( getType() != Type::ARRAY )
+      throw std::runtime_error("type must be ARRAY to use operator[].");
+    if( getMap().count(key) != 1 )
+      throw std::runtime_error("key not found.");
+    /* TODO returning a ref does not yet work... */
+    return getMap().at(key);
   }
   friend Value operator-(Value const & a, Value const & b) {
     Value res(a);
@@ -289,6 +310,15 @@ private:
     void print(std::ostream& os) const { os << object; }
     NumericModel(double const &value) : Concept(), object(value) {}
     double object;
+  };
+  struct ArrayModel : Concept {
+    Concept *clone() const { return new ArrayModel(object); }
+    void print(std::ostream& os) const {
+      for( auto const & elem : object )
+        os << elem.first << ": " << elem.second << std::endl;
+    }
+    ArrayModel(std::map<std::string, Value> const & val) : Concept(), object(val) {}
+    std::map<std::string, Value> object;
   };
   Concept *content;
   Type type;
