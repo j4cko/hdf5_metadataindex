@@ -1,4 +1,4 @@
-image: rqcd/centos7.2.1511-buildtools
+image: rqcd/centos7.2.1511-serialhdf5
 
 stages:
     - build
@@ -7,7 +7,7 @@ stages:
 build-job:
     stage: build
     script:
-      - yum -y install hdf5 jsoncpp
+      - yum -y install sqlite jsoncpp
       - mkdir install
       - cmake -DCMAKE_INSTALL_PREFIX=./install
       - make -j 2 install
