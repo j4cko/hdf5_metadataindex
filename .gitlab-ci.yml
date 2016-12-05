@@ -1,4 +1,4 @@
-image: rqcd/centos7.2.1511-serialhdf5
+image: rqcd/centos7.2.1511-buildtools-serialhdf5
 
 stages:
     - build
