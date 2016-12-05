@@ -51,6 +51,7 @@ herr_t h5_attr_iterate( hid_t o_id, const char *name, const H5A_info_t *attrinfo
     int* intbuf = new int[npts];
     res |= H5Aread(attr_id, dtype, intbuf);
     if( res != 0 ) { 
+      delete[] intbuf;
       H5Tclose(dtype);
       H5Aclose(attr_id);
       return res; }
@@ -63,11 +64,13 @@ herr_t h5_attr_iterate( hid_t o_id, const char *name, const H5A_info_t *attrinfo
       }
       if( npts == 1 ) attrs->push_back(Attribute(name, arr.at("0")));
       else            attrs->push_back(Attribute(name, Value(arr)));
+      delete[] intbuf;
     }
   } else if ( typeclass == H5T_FLOAT ) {
     double* floatbuf = new double[npts];
     res |= H5Aread(attr_id, dtype, floatbuf);
     if( res != 0 ) { 
+      delete[] floatbuf;
       H5Tclose(dtype);
       H5Aclose(attr_id);
       return res; }
@@ -80,6 +83,7 @@ herr_t h5_attr_iterate( hid_t o_id, const char *name, const H5A_info_t *attrinfo
       }
       if( npts == 1 ) attrs->push_back(Attribute(name, arr.at("0")));
       else            attrs->push_back(Attribute(name, Value(arr)));
+      delete[] floatbuf;
     }
   } else if ( typeclass == H5T_STRING ) {
     if( rank == 1 ) return -4; //no string array implemented.
