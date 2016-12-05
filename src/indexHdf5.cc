@@ -89,7 +89,6 @@ DatasetSpec processvector( Index const & idxstack ) {
     // avoid double slashes at the beginning (first / root elem of idxstack is
     // the file itself
     if( not elem.datasetname.empty() ) fullpath += "/" + elem.datasetname;
-    std::cout << "elem: " << elem.datasetname << " from file " << elem.file.filename << std::endl;
     for( auto const & attr : elem.attributes ) {
       thisspec.attributes.push_back(attr);
     }

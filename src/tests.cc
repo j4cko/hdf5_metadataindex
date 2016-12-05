@@ -1,4 +1,5 @@
 #include "attributes.h"
+#include "indexHdf5.h"
 #include <iostream>
 int itest = 0;
 #define SIMPLETEST( msg, code, condition ) \
@@ -26,6 +27,10 @@ int itest = 0;
 
 
 int main( int argc, char** argv ) {
+  std::string testdatadir(".");
+  if( argc == 2 ) testdatadir = argv[1];
+  else if( argc > 2 ){ std::cout << "unknown arguments." << std::endl; return 1; }
+
   std::cout << "=================================================" << std::endl;
   std::cout << "|| Value class                                 ||" << std::endl;
   std::cout << "=================================================" << std::endl;
@@ -67,5 +72,19 @@ int main( int argc, char** argv ) {
   SIMPLETEST( "attribute holds value", Attribute attr("exampleattr", 5);, attr.getValue() == 5);
   SIMPLETEST( "attribute returns type", Attribute attr("exampleattr", 5);, attr.getType() == Type::NUMERIC);
 
+  std::cout << "=================================================" << std::endl;
+  std::cout << "|| Read table                                  ||"<< std::endl;
+  std::cout << "=================================================" << std::endl;
+  {
+    Index tblidx;
+    try {
+       tblidx = indexFile(testdatadir + "/table_testdata.h5");
+    } catch (std::exception const & exc) {
+      std::cout << "could not index test file \"" << testdatadir + "/table_testdata.h5" << "\": " << exc.what();
+      return -1;
+    }
+    SIMPLETEST("Size of index is correct (table was ignored)?", , tblidx.size() == 1);
+    SIMPLETEST("Dataset was correctly recognized?", , tblidx.front().datasetname == "/rqcd/stoch_discon/stochsolve0/solve_0/data");
+  }
   return 0;
 }
