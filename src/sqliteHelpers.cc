@@ -94,6 +94,53 @@ void prepareSqliteFile(sqlite3 *db) {
     throw std::runtime_error(errstr.str());
   } else { std::cout << "database created." << std::endl;}
 }
+std::string createAttributesInsertionString( Attribute const & attr) {
+  std::stringstream sstr;
+  // TODO: should find another sol than ignore..
+  if( attr.getType() == Type::ARRAY ) {
+    for( auto const & key : attr.getValue().keys() ) {
+      std::stringstream attrname;
+      attrname << attr.getName() << "[" << key << "]";
+      sstr << createAttributesInsertionString(Attribute(attrname.str(), attr.getValue()[key]));
+    }
+  } else {
+    sstr <<
+      "insert or ignore into attributes(attrname,type) values(\"" <<
+      attr.getName() << "\", \"" << typeToString(attr.getType()) << "\");";
+  }
+  return sstr.str();
+}
+std::string createFilelocInsertionString( DatasetSpec const & dset ) {
+  std::stringstream sstr;
+  sstr << 
+    "insert into filelocations(locname,fileid) values('" << dset.datasetname << 
+    "',(select fileid from files where fname = '" << dset.file.filename << 
+    "' and mtime = " << dset.file.mtime << "));";
+  return sstr.str();
+}
+std::string createAttrValueInsertionString( DatasetSpec const & dset, 
+                                   Attribute const & attr ) {
+  std::stringstream sstr;
+  if( attr.getType() == Type::ARRAY ) {
+    // if it is an array, process each element in the same way:
+    for( auto const & elem : attr.getValue().keys() ) {
+      std::stringstream attrname;
+      attrname << attr.getName() << "[" << elem << "]";
+      sstr << createAttrValueInsertionString( dset, Attribute( attrname.str(), attr.getValue()[elem] ) );
+    }
+  } else {
+    sstr <<
+      "insert into attrvalues(attrid,locid,value) values(( select attrid from attributes where attrname=\"" <<
+      attr.getName() << "\"), (select locid from filelocations where locname=\"" << dset.datasetname << "\"),";
+    if(attr.getType() == Type::STRING)
+      //TODO: need to "escape" single quotes? single quotes are escaped by
+      //single quotes..
+      sstr << "\'" << attr.getValue() << "\');";
+    else
+      sstr << attr.getValue() << ");";
+  }
+  return sstr.str();
+}
 void insertDataset(sqlite3 *db, Index const & idx ) {
   char *zErrMsg = nullptr;
   std::stringstream sstr;
@@ -114,16 +161,9 @@ void insertDataset(sqlite3 *db, Index const & idx ) {
   //insert attributes and filelocations:
   sstr << "begin transaction;";
   for( auto dset : idx ){
-    sstr << 
-      "insert into filelocations(locname,fileid) values('" << dset.datasetname << 
-      "',(select fileid from files where fname = '" << dset.file.filename << 
-      "' and mtime = " << dset.file.mtime << "));";
-    for( auto attr : dset.attributes ){
-      // TODO: should find another sol than ignore..
-      sstr <<
-        "insert or ignore into attributes(attrname,type) values(\"" <<
-        attr.getName() << "\", \"" << typeToString(attr.getType()) << "\");";
-    }
+    sstr << createFilelocInsertionString(dset);
+    for( auto const & attr : dset.attributes )
+      sstr << createAttributesInsertionString(attr);
   }
   sstr << "commit transaction;";
   rc = sqlite3_exec( db,
@@ -136,19 +176,9 @@ void insertDataset(sqlite3 *db, Index const & idx ) {
   //connect attributes with locations:
   sstr.clear(); sstr.str("");
   sstr << "begin transaction;";
-  for( auto dset : idx ){
-    for( auto attr : dset.attributes ){
-      sstr <<
-        "insert into attrvalues(attrid,locid,value) values(( select attrid from attributes where attrname=\"" <<
-        attr.getName() << "\"), (select locid from filelocations where locname=\"" << dset.datasetname << "\"),";
-      if(attr.getType() == Type::STRING)
-        //TODO: need to "escape" single quotes? single quotes are escaped by
-        //single quotes..
-        sstr << "\'" << attr.getValue() << "\');";
-      else
-        sstr << attr.getValue() << ");";
-    }
-  }
+  for( auto const & dset : idx )
+    for( auto const & attr : dset.attributes )
+      sstr << createAttrValueInsertionString( dset, attr );
   sstr << "commit transaction;";
   rc = sqlite3_exec( db,
       sstr.str().c_str(), printCallback, 0, &zErrMsg );

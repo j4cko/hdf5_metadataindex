@@ -54,6 +54,10 @@ int main( int argc, char** argv ) {
     valmap.insert({"othertest", Value("testval")});
     Value arr(valmap);
     SIMPLETEST( "arrays of values, constructed in a simple way: ", , (arr["test"] == Value(3) && arr["othertest"] == Value("testval")) );
+    arr.insert("another", Value(123.4));
+    SIMPLETEST( "adding values after construction: ", , (arr["another"] == Value(123.4) && arr["test"] == Value(3) && arr["othertest"] == Value("testval")) );
+    SIMPLETEST( "adding values after construction: ", auto list=arr.keys(), list.size() == 3 );
+    SIMPLETEST( "changing values after insertion: ", arr["othertest"] = Value("anotherstring");, arr["othertest"] == "anotherstring" );
   }
 
   std::cout << "=================================================" << std::endl;

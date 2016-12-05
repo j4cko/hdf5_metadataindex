@@ -6,6 +6,7 @@ std::string typeToString(Type const & type) {
     case Type::NUMERIC: return "numeric";
     case Type::BOOLEAN: return "bool";
     case Type::STRING:  return "string";
+    case Type::ARRAY:   return "array";
     default: throw std::runtime_error("typeToString: unknown / unimplemented type. (may be used uninitialized?)");
   }
 }
@@ -15,12 +16,13 @@ Type typeFromTypeid(std::type_info const & tinfo) {
    or tinfo == typeid(unsigned char) )      return Type::NUMERIC;
   else if( tinfo == typeid(std::string) )   return Type::STRING;
   else if( tinfo == typeid(bool) )          return Type::BOOLEAN;
-  else throw std::runtime_error("typeFromTypeid: unknown type.");
+  else throw std::runtime_error("typeFromTypeid: unknown type (or array type)");
 }
 Type typeFromString(std::string const & typestr) {
   if( typestr == "numeric" )                return Type::NUMERIC;
   else if( typestr == "bool" )              return Type::BOOLEAN;
   else if( typestr == "string" )            return Type::STRING;
+  else if( typestr == "array" )             return Type::ARRAY;
   else throw std::runtime_error("typeFromString: unknown type.");
 }
 Attribute attributeFromStrings(std::string const & name, std::string const & valstr, 

@@ -94,7 +94,7 @@ public:
       throw std::runtime_error("Value must be STRING to get a string value.");
     return dynamic_cast<StringModel *>(content)->object;
   }
-  std::map<std::string, Value> getMap() {
+  std::map<std::string, Value> & getMap() {
     if( getType() != Type::ARRAY)
       throw std::runtime_error("Value must be ARRAY to get a value from it.");
     return dynamic_cast<ArrayModel *>(content)->object;
@@ -196,13 +196,39 @@ public:
     }
     return *this;
   }
-  Value operator[](std::string const & key) {
+  std::vector<std::string> keys() const {
+    if( getType() != Type::ARRAY )
+      throw std::runtime_error("type must be ARRAY to get the keys");
+    std::vector<std::string> keys;
+    auto const & map = dynamic_cast<ArrayModel *>(content)->object;
+    for( const auto & elem : map)
+      keys.push_back(elem.first);
+    return keys;
+  }
+  void insert(std::string const & key, Value const & val ) {
+    if( getType() != Type::ARRAY )
+      throw std::runtime_error("type must be ARRAY to insert values.");
+    auto & map = dynamic_cast<ArrayModel *>(content)->object;
+    if( map.count(key) != 0 )
+      map.at(key) = val;
+    else
+      map.insert({key, val});
+  }
+  Value & operator[](std::string const & key) {
     if( getType() != Type::ARRAY )
       throw std::runtime_error("type must be ARRAY to use operator[].");
-    if( getMap().count(key) != 1 )
+    auto & map = dynamic_cast<ArrayModel *>(content)->object;
+    if( map.count(key) != 1 )
       throw std::runtime_error("key not found.");
-    /* TODO returning a ref does not yet work... */
-    return getMap().at(key);
+    return map.at(key);
+  }
+  Value operator[](std::string const & key) const {
+    if( getType() != Type::ARRAY )
+      throw std::runtime_error("type must be ARRAY to use operator[].");
+    auto const & map = dynamic_cast<ArrayModel *>(content)->object;
+    if( map.count(key) != 1 )
+      throw std::runtime_error("key not found.");
+    return map.at(key);
   }
   friend Value operator-(Value const & a, Value const & b) {
     Value res(a);
@@ -243,48 +269,6 @@ public:
     res /= b;
     return res;
   }
-  
-  /*
-  Value& operator-=(Value const & other) {
-    if( getType() != other.getType() )
-      throw std::runtime_error("operator-=: cannot subtract different types.");
-    if( getType() != Type::NUMERIC )
-      throw std::runtime_error("operator-=: only defined for NUMERIC.");
-    content->subtract(other.content);
-    return *this;
-  }
-  friend Value operator-(Value const & a, Value const & b) {
-    Value res(a);
-    res -= b;
-    return res;
-  }
-  Value& operator*=(Value const & other) {
-    if( getType() != other.getType() )
-      throw std::runtime_error("operator*=: cannot multiply different types.");
-    if( getType() != Type::NUMERIC )
-      throw std::runtime_error("operator*=: only defined for NUMERIC.");
-    content->multiply(other.content);
-    return *this;
-  }
-  friend Value operator*(Value const & a, Value const & b) {
-    Value res(a);
-    res *= b;
-    return res;
-  }
-  Value& operator/=(Value const & other) {
-    if( getType() != other.getType() )
-      throw std::runtime_error("operator/=: cannot multiply different types.");
-    if( getType() != Type::NUMERIC )
-      throw std::runtime_error("operator/=: only defined for NUMERIC.");
-    content->divide(other.content);
-    return *this;
-  }
-  friend Value operator/(Value const & a, Value const & b) {
-    Value res(a);
-    res /= b;
-    return res;
-  }
-  */
 private:
   struct Concept {
     virtual ~Concept() {}

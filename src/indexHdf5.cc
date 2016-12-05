@@ -6,6 +6,11 @@
 #include <iostream>
 #include <sstream>
 herr_t h5_attr_iterate( hid_t o_id, const char *name, const H5A_info_t *attrinfo, void *opdata) {
+  /*
+   * arrays are implemented as maps with string keys (see attributes.h)
+   * in hdf5, attributes can be simply arrays. in this case,
+   * we generate string keys with simply the integer as string
+   */
   std::vector<Attribute>* attrs = (std::vector<Attribute>*)opdata;
   herr_t res = 0;
   hid_t attr_id = H5Aopen(o_id, name, H5P_DEFAULT);
@@ -26,13 +31,14 @@ herr_t h5_attr_iterate( hid_t o_id, const char *name, const H5A_info_t *attrinfo
       H5Aclose(attr_id);
       return res; }
     else {
+      std::map<std::string, Value> arr;
       for( auto i = 0; i < npts; i++) {
         sstr.clear(); sstr.str("");
-        if( npts > 1 )
-          sstr << name << "[" << i << "]";
-        else sstr << name;
-        attrs->push_back(Attribute(sstr.str(), (double)intbuf[i]));
+        sstr << i;
+        arr.insert({sstr.str(), (double)intbuf[i]});
       }
+      if( npts == 1 ) attrs->push_back(Attribute(name, arr.at("0")));
+      else            attrs->push_back(Attribute(name, Value(arr)));
     }
   } else if ( typeclass == H5T_FLOAT ) {
     double* floatbuf = new double[npts];
@@ -41,14 +47,16 @@ herr_t h5_attr_iterate( hid_t o_id, const char *name, const H5A_info_t *attrinfo
       H5Tclose(dtype);
       H5Aclose(attr_id);
       return res; }
-    else
+    else {
+      std::map<std::string, Value> arr;
       for( auto i = 0; i < npts; i++) {
         sstr.clear(); sstr.str("");
-        if( npts > 1 )
-          sstr << name << "[" << i << "]";
-        else sstr << name;
-        attrs->push_back(Attribute(sstr.str(), floatbuf[i]));
+        sstr << i;
+        arr.insert({sstr.str(), floatbuf[i]});
       }
+      if( npts == 1 ) attrs->push_back(Attribute(name, arr.at("0")));
+      else            attrs->push_back(Attribute(name, Value(arr)));
+    }
   } else if ( typeclass == H5T_STRING ) {
     if( rank == 1 ) return -4; //no string array implemented.
     auto size = H5Tget_size(dtype);
