@@ -5,6 +5,30 @@
 #include <vector>
 #include <iostream>
 #include <sstream>
+bool isTable( hid_t link, const char* name ) {
+  hid_t oid = H5Oopen(link, name, H5P_DEFAULT);
+  if( not H5Aexists_by_name(link, name, "CLASS", H5P_DEFAULT) ) {
+    H5Oclose(oid);
+    return false;
+  }
+  hid_t attrid =  H5Aopen_by_name(link, name, "CLASS", H5P_DEFAULT, H5P_DEFAULT);
+  hid_t dtype = H5Aget_type(attrid);
+  auto size = H5Tget_size(dtype);
+  char* buf = new char[size];
+  auto res = H5Aread(attrid, dtype, buf);
+  if( res != 0 ) { 
+    delete[] buf;
+    H5Tclose(dtype);
+    H5Aclose(attrid);
+    return false;
+  }
+  std::string strbuf(buf);
+  delete[] buf;
+  H5Tclose(dtype);
+  H5Aclose(attrid);
+  H5Oclose(oid);
+  return strbuf == "TABLE";
+}
 herr_t h5_attr_iterate( hid_t o_id, const char *name, const H5A_info_t *attrinfo, void *opdata) {
   /*
    * arrays are implemented as maps with string keys (see attributes.h)
@@ -134,8 +158,14 @@ herr_t h5_link_iterate( hid_t thislink, const char *name, const H5L_info_t *info
   else if( objinfo.type == H5O_TYPE_DATASET ) {
     // if it is a dataset: end of recursion: 
     // work back through the vector... and store in index:
-    dsetidx.push_back(processvector(stackidx));
-    stackidx.pop_back();
+    // IF it isn't a table:
+    if( isTable( thislink, name ) ) {
+      std::cout << "found table: " << name << std::endl;
+      //read and store table... maybe as separate object with full path info?
+    } else {
+      dsetidx.push_back(processvector(stackidx));
+      stackidx.pop_back();
+    }
   }
   else return -2; //unimplemented datatype
   return 0;

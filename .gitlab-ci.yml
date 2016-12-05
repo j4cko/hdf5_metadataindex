@@ -20,6 +20,6 @@ test-job:
     script:
       - yum -y install sqlite-devel jsoncpp-devel
       - ldd ./install/bin/tests
-      - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib64 ./install/bin/tests
+      - ./install/bin/tests ./testdata
     dependencies:
         - build-job
