@@ -18,6 +18,7 @@ build-job:
 test-job:
     stage: test
     script:
+      - ldd ./install/bin/tests
       - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib64 ./install/bin/tests
     dependencies:
         - build-job
