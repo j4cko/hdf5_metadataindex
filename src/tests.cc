@@ -64,6 +64,14 @@ int main( int argc, char** argv ) {
     SIMPLETEST( "adding values after construction: ", auto list=arr.keys(), list.size() == 3 );
     SIMPLETEST( "changing values after insertion: ", arr["othertest"] = Value("anotherstring");, arr["othertest"] == "anotherstring" );
   }
+  {
+    std::map<std::string, Value> valmap;
+    Value arr1(valmap), arr2(valmap);
+    arr1.insert("test", Value(2)); arr2.insert("test", Value(3));
+    SIMPLETEST( "comparison of two arrays works: inequal?", , not ( arr1 == arr2 ) );
+    arr2["test"] = Value(2);
+    SIMPLETEST( "comparison of two arrays works: equal?", , ( arr1 == arr2 ) );
+  }
 
   std::cout << "=================================================" << std::endl;
   std::cout << "|| Attribute class                             ||"<< std::endl;

@@ -105,6 +105,7 @@ public:
   }
   friend bool operator==(Value const & a, Value const & b) {
     if( a.getType() != b.getType() ) return false;
+    bool equal = true;
     switch( a.getType() ) {
       case Type::NUMERIC:
         return a.getNumeric() == b.getNumeric();
@@ -112,6 +113,16 @@ public:
         return a.getString() == b.getString();
       case Type::BOOLEAN:
         return a.getBool() == b.getBool();
+      case Type::ARRAY:
+        //compare keys:
+        for( auto const & key : a.keys() )
+          equal &= (b.getMap().count(key) == 1);
+        if( not equal ) return false;
+        // has all keys.
+        for( auto const & key : a.keys() )
+          equal &= (a[key] == b[key]);
+        // all keys are equal?
+        return equal;
       default:
         throw std::runtime_error("unsupported type for operator==");
     }
