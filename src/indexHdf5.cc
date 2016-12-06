@@ -4,7 +4,31 @@
 #include "hdf5_hl.h"
 #include <vector>
 #include <iostream>
+#include <algorithm>
 #include <sstream>
+#include "readTable.h"
+
+void connectTablesWithDatasetSpecs(Index & idx, std::map<std::string, Value> const & tables) {
+  /*
+   * stores all tables in the corresponding datasets as attribute "table"
+   */
+  for( auto const & table : tables ) {
+    std::cout << "looking for " << table.first << std::endl;
+    std::string searchpath = table.first;
+    auto it = idx.begin();
+    while( it != idx.end() ) {
+      it = std::find_if(it, idx.end(), [&searchpath](DatasetSpec const & elem){
+          return elem.datasetname.substr(0, searchpath.size()) == searchpath;
+        });
+      if( it != idx.cend() ) {
+        std::cout << "found: " << it->datasetname << std::endl;
+        it->tables.push_back(table.second);
+      }
+      ++it;
+    }
+  }
+}
+
 bool isTable( hid_t link, const char* name ) {
   hid_t oid = H5Oopen(link, name, H5P_DEFAULT);
   if( not H5Aexists_by_name(link, name, "CLASS", H5P_DEFAULT) ) {
@@ -108,29 +132,35 @@ herr_t h5_attr_iterate( hid_t o_id, const char *name, const H5A_info_t *attrinfo
   res &= H5Aclose(attr_id);
   return 0;
 }
-DatasetSpec processvector( Index const & idxstack ) {
-  //copy all attributes along the hierarchical way from the root node to the
-  //current node into thisspec:
-  DatasetSpec thisspec;
+std::string getFullpath( Index const & idxstack ) {
   std::string fullpath("");
   for( auto const & elem : idxstack) {
     // avoid double slashes at the beginning (first / root elem of idxstack is
     // the file itself
     if( not elem.datasetname.empty() ) fullpath += "/" + elem.datasetname;
+  }
+  return fullpath;
+}
+DatasetSpec processvector( Index const & idxstack ) {
+  //copy all attributes along the hierarchical way from the root node to the
+  //current node into thisspec:
+  DatasetSpec thisspec;
+  for( auto const & elem : idxstack) {
     for( auto const & attr : elem.attributes ) {
       thisspec.attributes.push_back(attr);
     }
   }
   // give it the name of the current node:
-  thisspec.datasetname = fullpath;
+  thisspec.datasetname = getFullpath(idxstack);
   thisspec.file        = idxstack.back().file;
   return thisspec;
 }
 herr_t h5_link_iterate( hid_t thislink, const char *name, const H5L_info_t *info, void *opdata) {
   //make the data easier accessible:
-  std::pair<Index,Index>* data = (std::pair<Index,Index>*) opdata;
-  Index & stackidx = data->first;
-  Index & dsetidx = data->second;
+  std::tuple<Index,Index,std::map<std::string, Value>>* data = (std::tuple<Index,Index,std::map<std::string, Value>>*) opdata;
+  Index & stackidx = std::get<0>(*data);
+  Index & dsetidx = std::get<1>(*data);
+  std::map<std::string, Value> & tables = std::get<2>(*data);
   //
   //get all attributes of the current link:
   std::vector<Attribute> attrdata;
@@ -164,8 +194,9 @@ herr_t h5_link_iterate( hid_t thislink, const char *name, const H5L_info_t *info
     // work back through the vector... and store in index:
     // IF it isn't a table:
     if( isTable( thislink, name ) ) {
-      std::cout << "found table: " << name << std::endl;
-      //read and store table... maybe as separate object with full path info?
+      //read and store table... 
+      stackidx.pop_back();
+      tables.insert({ getFullpath(stackidx), readTable(thislink, name)});
     } else {
       dsetidx.push_back(processvector(stackidx));
       stackidx.pop_back();
@@ -197,8 +228,8 @@ Index indexFile(std::string filename) {
   // current one.
   // the second is the collection of all datasets that will be gathered into the
   // database.
-  std::pair<Index,Index> data;
-  data.first.push_back({{}, "", filename, mtime});
+  std::tuple<Index,Index,std::map<std::string,Value>> data;
+  std::get<0>(data).push_back({{}, "", filename, mtime});
   herr_t visitres = H5Literate(file_id, H5_INDEX_NAME, H5_ITER_NATIVE, NULL, h5_link_iterate, &data);
   H5Fclose(file_id);
 
@@ -209,11 +240,13 @@ Index indexFile(std::string filename) {
   else if( visitres == -4 ) throw std::runtime_error("no string array implemented.");
   else if( visitres < 0 )throw std::runtime_error("other unknown error during"
                                                   "traversal of the file.");
+  // connect tables with datasetspecs:
+  connectTablesWithDatasetSpecs(std::get<1>(data), std::get<2>(data));
   //returning only the datasets and not the stack (which should be empty anyway)
-  return data.second;
+  return std::get<1>(data);
 }
 void printIndex(Index const & idx, std::ostream& os) {
-  for ( auto dataset : idx ) {
+  for ( auto const & dataset : idx ) {
     os << "dataset \"" << dataset.datasetname << "\" (from file \""
       << dataset.file.filename << "\")" <<
       " has the following attributes:" << std::endl;

@@ -379,6 +379,7 @@ struct DatasetSpec {
   std::vector<Attribute> attributes;
   std::string datasetname;
   File file;
+  std::vector<Value> tables;
 };
 
 typedef std::vector<DatasetSpec> Index;

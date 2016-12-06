@@ -1,5 +1,6 @@
 #include "attributes.h"
 #include "indexHdf5.h"
+#include "readTable.h"
 #include <iostream>
 int itest = 0;
 #define SIMPLETEST( msg, code, condition ) \
@@ -93,6 +94,16 @@ int main( int argc, char** argv ) {
     }
     SIMPLETEST("Size of index is correct (table was ignored)?", , tblidx.size() == 1);
     SIMPLETEST("Dataset was correctly recognized?", , tblidx.front().datasetname == "/rqcd/stoch_discon/stochsolve0/solve_0/data");
+    SIMPLETEST("table is stored correctly in DatasetSpec?", ,tblidx.front().tables.size() == 1);
+    std::map<std::string, Value> m;
+    m.insert({"interpolator", Value(15)});
+    m.insert({"hpe", Value(0)});
+    m.insert({"smear", Value(0)});
+    std::map<std::string, Value> mom;
+    mom.insert({"0", -1}); mom.insert({"1", 0}); mom.insert({"2", -1}); 
+    m.insert({"mom", Value(mom)});
+    Value req(m);
+    SIMPLETEST("can find correct row to request?", , findInTable(tblidx.front().tables.front(), req) == 123);
   }
   return 0;
 }

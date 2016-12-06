@@ -3,9 +3,11 @@ project (Hdf5MetadataIndex)
 
 set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
-add_executable(indexHdf5 "${CMAKE_SOURCE_DIR}/src/indexer.cc" src/attributes.cc src/h5helpers.cc src/indexHdf5.cc src/sqliteHelpers.cc )
-add_executable(queryDb "${CMAKE_SOURCE_DIR}/src/queryDb.cc" src/indexHdf5.cc src/attributes.cc src/h5helpers.cc src/sqliteHelpers.cc src/postselection.cc )
-add_executable(tests src/tests.cc src/indexHdf5.cc src/attributes.cc src/h5helpers.cc src/sqliteHelpers.cc src/postselection.cc )
+add_executable(indexHdf5 "${CMAKE_SOURCE_DIR}/src/indexer.cc" src/attributes.cc src/h5helpers.cc src/indexHdf5.cc src/sqliteHelpers.cc  src/readTable.cc )
+add_executable(queryDb "${CMAKE_SOURCE_DIR}/src/queryDb.cc" src/indexHdf5.cc
+  src/attributes.cc src/h5helpers.cc src/sqliteHelpers.cc src/postselection.cc
+  src/readTable.cc)
+add_executable(tests src/tests.cc src/indexHdf5.cc src/attributes.cc src/h5helpers.cc src/sqliteHelpers.cc src/postselection.cc src/readTable.cc )
 
 macro(use_cxx11)
   if (CMAKE_VERSION VERSION_LESS "3.1")
@@ -24,9 +26,9 @@ find_package (JsonCpp REQUIRED)
 include_directories(${JSONCPP_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${JSONCPP_LIBRARIES})
 
-find_package (HDF5 REQUIRED)
+find_package (HDF5 REQUIRED COMPONENTS C HL)
 include_directories(${HDF5_INCLUDE_DIRS})
-set(LIBS ${LIBS} ${HDF5_LIBRARIES})
+set(LIBS ${LIBS} ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
 
 find_package (SQLite3 REQUIRED)
 include_directories(${SQLITE3_INCLUDE_DIRS})
