@@ -270,7 +270,7 @@ Index indexFile(std::string filename) {
 void printIndex(Index const & idx, std::ostream& os) {
   for ( auto const & dataset : idx ) {
     os << "dataset \"" << dataset.datasetname << "\" (from file \""
-      << dataset.file.filename << "\")" <<
+      << dataset.file.filename << "\" and row " << dataset.location.begin << ")" <<
       " has the following attributes:" << std::endl;
     for ( auto attr : dataset.attributes ) {
       os << "  - " << attr.getName() 

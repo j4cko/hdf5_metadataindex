@@ -23,14 +23,12 @@ static int getIntCallback(void *intvar, int argc, char** argv, char** azColName)
 }
 static int dsetspecFileinfoCallback(void *var, int argc, char** argv, char** azColName) {
   DatasetSpec* dsetspec = static_cast<DatasetSpec*>(var);
-  if( argc != 3 ) return -1;
+  if( argc != 4 ) return -1;
   for(int i = 0; i < argc; i++) {
     if( std::string(azColName[i]) == "locname" ) dsetspec->datasetname = std::string(argv[i]);
     else if( std::string(azColName[i]) == "fname" ) dsetspec->file.filename = std::string(argv[i]);
-    else if( std::string(azColName[i]) == "mtime" ) {
-      std::stringstream sstr(argv[i]);
-      sstr >> dsetspec->file.mtime;
-    }
+    else if( std::string(azColName[i]) == "row" )   dsetspec->location.begin = std::stoi(std::string(argv[i]));
+    else if( std::string(azColName[i]) == "mtime" ) dsetspec->file.mtime = std::stoi(std::string(argv[i]));
   }
   return 0;
 }
@@ -265,7 +263,7 @@ DatasetSpec idsToDatasetSpec(sqlite3 *db, int locid) {
   std::stringstream sstr;
   // first get the locname (datasetname)
   // select locname,fname,mtime from (select * from filelocations inner join files on filelocations.fileid = files.fileid);
-  sstr << "select locname,fname,mtime from (select * from filelocations inner join files on filelocations.fileid = files.fileid) where locid=\"" << locid << "\";";
+  sstr << "select locname,row,fname,mtime from (select * from filelocations inner join files on filelocations.fileid = files.fileid) where locid=\"" << locid << "\";";
   char *zErrMsg = nullptr;
   int rc = sqlite3_exec( db, 
       sstr.str().c_str(), dsetspecFileinfoCallback, &res, &zErrMsg );
