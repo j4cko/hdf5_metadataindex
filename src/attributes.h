@@ -388,12 +388,13 @@ class FileCondition {
 };
 struct DatasetChunkSpec {
   DatasetChunkSpec(int const & start) : begin(start) {}
+  DatasetChunkSpec() : begin(-1) {}; //default: read complete dataset.
   int begin;
 };
 typedef std::unique_ptr<FileCondition> FileRequest;
 struct DatasetSpec {
   DatasetSpec(std::vector<Attribute> const & attr, std::string const & dsetname, File const & file_, DatasetChunkSpec const & loc) : attributes(attr), datasetname(dsetname), file(file_), location(loc) {};
-  DatasetSpec() : attributes(), datasetname(""), file({"", 0}), location(0) {};
+  DatasetSpec() : attributes(), datasetname(""), file({"", 0}), location() {};
   std::vector<Attribute> attributes;
   std::string datasetname;
   File file;
