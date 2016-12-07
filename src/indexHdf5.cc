@@ -8,25 +8,49 @@
 #include <sstream>
 #include "readTable.h"
 
-void connectTablesWithDatasetSpecs(Index & idx, std::map<std::string, Value> const & tables) {
+void mergeIndex( Index & res, Index const & idxToMerge ) {
+  for ( auto const & from : idxToMerge )
+    res.push_back(from);
+}
+std::vector<Attribute> tableFieldsToAttributes(Value const & table) {
+  std::vector<Attribute> res;
+  for( auto const & key : table["fields"].keys() ) {
+    res.push_back(Attribute(key, Value(table["fields"][key])));
+  }
+  return res;
+}
+Index splitDsetSpecWithTable( DatasetSpec const & dset, Value const & table ) {
   /*
-   * stores all tables in the corresponding datasets as attribute "table"
+   * splits a dataset specifier that is described by a table into several
+   * DatasetSpecs, each holding the attributes from the table and the correct
+   * location within the dataset.
    */
-  for( auto const & table : tables ) {
-    std::cout << "looking for " << table.first << std::endl;
-    std::string searchpath = table.first;
-    auto it = idx.begin();
-    while( it != idx.end() ) {
-      it = std::find_if(it, idx.end(), [&searchpath](DatasetSpec const & elem){
-          return elem.datasetname.substr(0, searchpath.size()) == searchpath;
-        });
-      if( it != idx.cend() ) {
-        std::cout << "found: " << it->datasetname << std::endl;
-        it->tables.push_back(table.second);
-      }
-      ++it;
+  Index res;
+  for( auto const & req : table.getMap() ) {
+    auto attrs = tableFieldsToAttributes(req.second);
+    DatasetSpec newdset(dset);
+    for( auto && attr : attrs )
+      newdset.attributes.push_back(std::move(attr));
+    newdset.location.begin = (int)(req.second["row"].getNumeric());
+    res.push_back(std::move(newdset));
+  }
+  return res;
+}
+Index expandIndex(Index const & idx, std::map<std::string, Value> const & tables) {
+  Index res;
+  for( auto const & elem : idx ) {
+    // for each DatasetSpec in the Index, check if there is a table describing
+    // the data contents
+    std::string tablename = elem.datasetname.substr(0, elem.datasetname.rfind("/"));
+    if( tables.count( tablename ) > 0) {
+      // dset has table:
+      mergeIndex( res, splitDsetSpecWithTable(elem, tables.at(tablename)) );
+    } else {
+      // doesn't have table, add to result index:
+      res.push_back(elem);
     }
   }
+  return res;
 }
 
 bool isTable( hid_t link, const char* name ) {
@@ -175,7 +199,7 @@ herr_t h5_link_iterate( hid_t thislink, const char *name, const H5L_info_t *info
   //save name and attributes on the stack index:
   assert(not stackidx.empty());
 
-  stackidx.push_back({attrdata, std::string(name), stackidx.back().file});
+  stackidx.push_back(DatasetSpec(attrdata, std::string(name), stackidx.back().file, DatasetChunkSpec(0)));
 
   //find out the type of the object:
   H5O_info_t objinfo;
@@ -229,7 +253,7 @@ Index indexFile(std::string filename) {
   // the second is the collection of all datasets that will be gathered into the
   // database.
   std::tuple<Index,Index,std::map<std::string,Value>> data;
-  std::get<0>(data).push_back({{}, "", filename, mtime});
+  std::get<0>(data).push_back(DatasetSpec({}, "", File(filename, mtime), DatasetChunkSpec(0)));
   herr_t visitres = H5Literate(file_id, H5_INDEX_NAME, H5_ITER_NATIVE, NULL, h5_link_iterate, &data);
   H5Fclose(file_id);
 
@@ -240,10 +264,8 @@ Index indexFile(std::string filename) {
   else if( visitres == -4 ) throw std::runtime_error("no string array implemented.");
   else if( visitres < 0 )throw std::runtime_error("other unknown error during"
                                                   "traversal of the file.");
-  // connect tables with datasetspecs:
-  connectTablesWithDatasetSpecs(std::get<1>(data), std::get<2>(data));
   //returning only the datasets and not the stack (which should be empty anyway)
-  return std::get<1>(data);
+  return expandIndex(std::get<1>(data), std::get<2>(data));
 }
 void printIndex(Index const & idx, std::ostream& os) {
   for ( auto const & dataset : idx ) {

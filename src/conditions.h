@@ -12,8 +12,7 @@ class Equals : public AttributeCondition {
     bool matches(Attribute const & attr, std::string const & reqname) const {
       return attr.getValue() == val and attr.getName() == reqname; }
     std::unique_ptr<AttributeCondition> clone() const { 
-      //make_unique is missing in C++11:
-      return std::unique_ptr<Equals>(new Equals(val)); }
+      return std::make_unique<Equals>(val); }
     std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
       if( val.getType() == Type::STRING )
@@ -34,8 +33,7 @@ class NotEquals : public AttributeCondition {
       else return false;
     }
     std::unique_ptr<AttributeCondition> clone() const { 
-      //make_unique is missing in C++11:
-      return std::unique_ptr<NotEquals>(new NotEquals(val)); }
+      return std::make_unique<NotEquals>(val); }
     std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
       if( val.getType() == Type::STRING )
@@ -49,12 +47,14 @@ class NotEquals : public AttributeCondition {
 };
 class Range: public AttributeCondition { 
   public:
-    Range(Value min_, Value max_) : min(min_), max(max_) {}
+    Range(Value min_, Value max_) : min(min_), max(max_) {
+      if (min.getType() != max.getType())
+        throw std::runtime_error("Range condition: min and max must be of the same type.");
+    }
     bool matches(Attribute const & attr, std::string const & reqname) const {
-      return (attr.getValue() >= min and attr.getValue() <= max and attr.getName() == reqname); }
+      return (attr.getType() == min.getType() && attr.getValue() >= min and attr.getValue() <= max and attr.getName() == reqname); }
     std::unique_ptr<AttributeCondition> clone() const { 
-      //make_unique is missing in C++11:
-      return std::unique_ptr<Range>(new Range(min, max)); }
+      return std::make_unique<Range>(min, max); }
     std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
       assert(min.getType() == max.getType());
@@ -72,10 +72,9 @@ class Min : public AttributeCondition {
   public:
     explicit Min(Value min_) : min(min_) {}
     bool matches(Attribute const & attr, std::string const & reqname) const {
-      return (attr.getValue() >= min and attr.getName() == reqname); }
+      return (attr.getType() == min.getType() && attr.getValue() >= min and attr.getName() == reqname); }
     std::unique_ptr<AttributeCondition> clone() const { 
-      //make_unique is missing in C++11:
-      return std::unique_ptr<Min>(new Min(min)); }
+      return std::make_unique<Min>(min); }
     std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
       if( min.getType() == Type::STRING )
@@ -91,10 +90,9 @@ class Max : public AttributeCondition {
   public:
     explicit Max(Value max_) : max(max_) {}
     bool matches(Attribute const & attr, std::string const & reqname) const {
-      return (attr.getValue() >= max and attr.getName() == reqname); }
+      return (attr.getType() == max.getType() && attr.getValue() >= max and attr.getName() == reqname); }
     std::unique_ptr<AttributeCondition> clone() const { 
-      //make_unique is missing in C++11:
-      return std::unique_ptr<Max>(new Max(max)); }
+      return std::make_unique<Max>(max); }
     std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
       if( max.getType() == Type::STRING )
@@ -115,14 +113,20 @@ class Present : public AttributeCondition {
     bool matches(Attribute const & attr, std::string const & reqname) const {
       return attr.getName() == reqname; }
     std::unique_ptr<AttributeCondition> clone() const { 
-      //make_unique is missing in C++11:
-      return std::unique_ptr<Present>(new Present(present)); }
+      return std::make_unique<Present>(present); }
   private:
     bool present;
 };
 class Or : public AttributeCondition {
   public:
-    explicit Or(std::vector<Value> const & values) : vals(values) {}
+    explicit Or(std::vector<Value> const & values) : vals(values) {
+      // is this even necessary??
+      Type t = vals.front().getType();
+      for( auto const & val : values ) {
+        if( t != val.getType() )
+          throw std::runtime_error("AttributeConditions::Or: All values must be of same type.");
+      }
+    }
     bool matches(Attribute const & attr, std::string const & reqname) const {
       bool match = false;
       for( auto const & val : vals )
@@ -130,8 +134,7 @@ class Or : public AttributeCondition {
       return (match and (attr.getName() == reqname));
     }
     std::unique_ptr<AttributeCondition> clone() const { 
-      //make_unique is missing in C++11:
-      return std::unique_ptr<Or>(new Or(vals)); }
+      return std::make_unique<Or>(vals); }
     std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
       assert(vals.size() > 0);
@@ -162,8 +165,7 @@ class Matches : public AttributeCondition {
       sstr << attr.getValue();
       return attr.getName() == reqname and std::regex_match(sstr.str(), regex); }
     std::unique_ptr<AttributeCondition> clone() const { 
-      //make_unique is missing in C++11:
-      return std::unique_ptr<Matches>(new Matches(regex)); }
+      return std::make_unique<Matches>(regex); }
   private:
     std::regex regex;
 };

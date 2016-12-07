@@ -1,6 +1,9 @@
 #include "attributes.h"
 #include "indexHdf5.h"
 #include "readTable.h"
+#include "postselection.h"
+#include "conditions.h"
+#include "indexHdf5.h"
 #include <iostream>
 int itest = 0;
 #define SIMPLETEST( msg, code, condition ) \
@@ -92,18 +95,23 @@ int main( int argc, char** argv ) {
       std::cout << "could not index test file \"" << testdatadir + "/table_testdata.h5" << "\": " << exc.what();
       return -1;
     }
-    SIMPLETEST("Size of index is correct (table was ignored)?", , tblidx.size() == 1);
+    std::cout << "size: " << tblidx.size() << std::endl;
+    SIMPLETEST("Size of index is correct (the only dset was split in components)?", , tblidx.size() == 2025);
     SIMPLETEST("Dataset was correctly recognized?", , tblidx.front().datasetname == "/rqcd/stoch_discon/stochsolve0/solve_0/data");
-    SIMPLETEST("table is stored correctly in DatasetSpec?", ,tblidx.front().tables.size() == 1);
-    std::map<std::string, Value> m;
-    m.insert({"interpolator", Value(15)});
-    m.insert({"hpe", Value(0)});
-    m.insert({"smear", Value(0)});
-    std::map<std::string, Value> mom;
-    mom.insert({"0", -1}); mom.insert({"1", 0}); mom.insert({"2", -1}); 
-    m.insert({"mom", Value(mom)});
-    Value req(m);
-    SIMPLETEST("can find correct row to request?", , findInTable(tblidx.front().tables.front(), req) == 123);
+    Request request;
+    filterIndexByPostselectionRules(tblidx, request);
+    SIMPLETEST("Empty request leaves index size unchanged?", , tblidx.size() == 2025);
+    request.attrrequests.push_back(AttributeRequest("interpolator", AttributeConditions::Equals(7)));
+    filterIndexByPostselectionRules(tblidx, request);
+    SIMPLETEST("request returns all interp=7 values?", , tblidx.size() == 54);
+    request.attrrequests.push_back(AttributeRequest("hpe", AttributeConditions::Equals(4)));
+    filterIndexByPostselectionRules(tblidx, request);
+    SIMPLETEST("request returns all interp=7 AND hpe=4 values?", , tblidx.size() == 27);
+    std::map<std::string, Value> map;
+    map.insert({"0", 1}); map.insert({"1", 1}); map.insert({"2", 1});
+    request.attrrequests.push_back(AttributeRequest("mom", AttributeConditions::Equals(map)));
+    filterIndexByPostselectionRules(tblidx, request);
+    SIMPLETEST("request returns all interp=7 AND hpe=4 values at mom=1,1,1?", , tblidx.size() == 1);
   }
   return 0;
 }

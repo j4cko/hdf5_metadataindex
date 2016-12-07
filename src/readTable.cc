@@ -16,22 +16,28 @@ Value readArray( hid_t type, std::size_t idx, void const * buf, std::size_t cons
         sstr.str(""); sstr.clear(); sstr << idx;
         arrmap.insert({sstr.str(), Value( (double)((int*)buf)[idx] )});
       }
-      if( size != sizeof(int)*dims[idim] )
+      if( size != sizeof(int)*dims[idim] ) {
+        delete[] dims;
         throw std::runtime_error("invalid read size.");
+      }
     } else if ( H5Tget_class( super ) == H5T_FLOAT ) {
       for( auto idx = 0u; idx < dims[idim]; ++idx ) {
         sstr.str(""); sstr.clear(); sstr << idx;
         arrmap.insert({sstr.str(), Value( ((double*)buf)[idx] )});
       }
-      if( size != sizeof(double)*dims[idim] )
+      if( size != sizeof(double)*dims[idim] ){
+        delete[] dims;
         throw std::runtime_error("invalid read size.");
+      }
         /*
          * TODO: add Float, Bool, String... 
          */
     } else {
+      delete[] dims;
       throw std::runtime_error("not implemented array type.");
     }
   }
+  delete[] dims;
   H5Tclose(super);
   H5Tclose(arrtype);
   return Value(arrmap);
@@ -93,11 +99,4 @@ Value readTable(hid_t link, const char* name) {
   for( int i = 0; i < nfields; i++) { delete[] fieldnames[i]; }
   delete[] fieldsizes; delete[] fieldoffsets; delete[] fieldnames; 
   return Value(outerTable);
-}
-int findInTable(Value const & table, Value const & search) {
-  for( auto const & entry : table.getMap() ) {
-    if( entry.second["fields"] == search )
-      return (int)(entry.second["row"].getNumeric());
-  }
-  throw std::runtime_error("table request not found in table.");
 }

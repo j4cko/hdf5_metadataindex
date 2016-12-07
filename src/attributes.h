@@ -321,9 +321,8 @@ private:
 
 class Attribute {
   public:
-    template<typename T>
-    Attribute(std::string const & name, T const & in) : 
-      attrname(name), val(in) { }
+    Attribute(std::string const & name, Value const & val_) : 
+      attrname(name), val(val_) { }
     Type getType() const { return val.getType(); }
     Value getValue() const { return val; };
     std::string getName() const { return attrname; };
@@ -363,6 +362,7 @@ class AttributeRequest {
     std::unique_ptr<AttributeCondition> cond;
 };
 struct File {
+  File(std::string const & name, int time) : filename(name), mtime(time) {}
   std::string filename;
   int mtime;
   friend bool operator==(File const & a, File const & b) {
@@ -374,12 +374,18 @@ class FileCondition {
     virtual bool matches(File const & file) const = 0;
     virtual std::unique_ptr<FileCondition> clone() const = 0;
 };
+struct DatasetChunkSpec {
+  DatasetChunkSpec(int const & start) : begin(start) {}
+  int begin;
+};
 typedef std::unique_ptr<FileCondition> FileRequest;
 struct DatasetSpec {
+  DatasetSpec(std::vector<Attribute> const & attr, std::string const & dsetname, File const & file_, DatasetChunkSpec const & loc) : attributes(attr), datasetname(dsetname), file(file_), location(loc) {};
+  DatasetSpec() : attributes(), datasetname(""), file({"", 0}), location(0) {};
   std::vector<Attribute> attributes;
   std::string datasetname;
   File file;
-  std::vector<Value> tables;
+  DatasetChunkSpec location; // location within the dataset
 };
 
 typedef std::vector<DatasetSpec> Index;

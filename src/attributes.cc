@@ -34,12 +34,14 @@ Attribute attributeFromStrings(std::string const & name, std::string const & val
   switch ( typespec ) {
     case Type::NUMERIC:
       sstr >> doublebuf;
-      return Attribute(name, doublebuf);
+      return Attribute(name, Value(doublebuf));
     case Type::BOOLEAN:
       sstr >> boolbuf;
-      return Attribute(name, boolbuf);
+      return Attribute(name, Value(boolbuf));
     case Type::STRING:
-      return Attribute(name, valstr);
+      return Attribute(name, Value(valstr));
+    case Type::ARRAY:
+      throw std::runtime_error("attributeFromStrings: arrays from string not impl");
     default:
       throw std::runtime_error("attributeFromStrings: unimplemented type");
   }
