@@ -1,5 +1,6 @@
 #include "attributes.h"
 #include <iostream>
+#include "jsonToValue.h"
 #include <sstream>
 std::string typeToString(Type const & type) {
   switch(type) {
@@ -28,23 +29,9 @@ Type typeFromString(std::string const & typestr) {
 Attribute attributeFromStrings(std::string const & name, std::string const & valstr, 
         std::string const & typestr) {
   const Type typespec = typeFromString(typestr);
-  std::stringstream sstr;
-  sstr << valstr;
-  double doublebuf; bool boolbuf;
-  switch ( typespec ) {
-    case Type::NUMERIC:
-      sstr >> doublebuf;
-      return Attribute(name, Value(doublebuf));
-    case Type::BOOLEAN:
-      sstr >> boolbuf;
-      return Attribute(name, Value(boolbuf));
-    case Type::STRING:
-      return Attribute(name, Value(valstr));
-    case Type::ARRAY:
-      throw std::runtime_error("attributeFromStrings: arrays from string not impl");
-    default:
-      throw std::runtime_error("attributeFromStrings: unimplemented type");
-  }
+  auto resval = valueFromString(valstr);
+  assert(resval.getType() == typespec);
+  return Attribute(name, resval);
 }
 std::list<File> getUniqueFiles(Index const & idx) {
   std::list<File> res;
@@ -57,4 +44,32 @@ std::list<File> getUniqueFiles(Index const & idx) {
       });
   res.unique();
   return res;
+}
+bool isArrayString(std::string const & str) {
+  return ( str[0] == '{' and str.back() == '}' );
+}
+Value valueFromString(std::string const & str){
+  //array:
+  if( isArrayString(str) ){
+    std::stringstream sstr;
+    sstr << str;
+    Json::Value root;
+    sstr >> root;
+    return jsonValueToValue(root);
+  }
+  // bool:
+  else if( str == "true" ) return Value(true);
+  else if( str == "false" ) return Value(false);
+  else {
+    //numeric
+    try {
+      std::size_t pos;
+      double d = std::stod(str, &pos);
+      // if not everything could be converted, it is in fact a string:
+      if( pos != str.size() ) return Value(str);
+      return Value(d);
+    } catch(...){}
+    // string:
+    return Value(str);
+  }
 }

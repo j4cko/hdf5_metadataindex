@@ -103,6 +103,11 @@ public:
     val.content->print(os);
     return os;
   }
+  /*
+  friend std::istream& operator>>(std::istream& is, Value & val) {
+    val.content->read(is);
+    return os;
+  }*/
   friend bool operator==(Value const & a, Value const & b) {
     if( a.getType() != b.getType() ) return false;
     bool equal = true;
@@ -296,7 +301,7 @@ private:
   };
   struct BooleanModel : Concept {
     Concept *clone() const { return new BooleanModel(object); }
-    void print(std::ostream& os) const { os << object; }
+    void print(std::ostream& os) const { os << (object ? "true" : "false") ; }
     BooleanModel(bool const & value) : Concept(), object(value) {}
     bool object;
   };
@@ -309,8 +314,15 @@ private:
   struct ArrayModel : Concept {
     Concept *clone() const { return new ArrayModel(object); }
     void print(std::ostream& os) const {
-      for( auto const & elem : object )
-        os << elem.first << ": " << elem.second << std::endl;
+      os << "{";
+      auto it = object.cbegin();
+      auto end = object.cend();
+      --end;
+      for( ; it != end; ++it )
+        os << "\"" << it->first << "\": " << it->second << ",";
+      if( not object.empty() ) 
+        os << "\"" << it->first << "\": " << it->second;
+      os << "}";
     }
     ArrayModel(std::map<std::string, Value> const & val) : Concept(), object(val) {}
     std::map<std::string, Value> object;
@@ -400,4 +412,6 @@ std::list<File> getUniqueFiles(Index const & idx);
 
 Attribute attributeFromStrings(std::string const & name, std::string const & valstr, 
         std::string const & typestr);
+
+Value valueFromString(std::string const & str);
 #endif

@@ -76,6 +76,35 @@ int main( int argc, char** argv ) {
     arr2["test"] = Value(2);
     SIMPLETEST( "comparison of two arrays works: equal?", , ( arr1 == arr2 ) );
   }
+  {
+    SIMPLETEST( "can convert string to bool? ", Value val(valueFromString("true")), val.getBool() == true );
+    SIMPLETEST( "can convert string to bool? ", Value val(valueFromString("false")), val.getBool() == false );
+    SIMPLETEST( "can convert string to numeric? ", Value val(valueFromString("4")), val.getNumeric() == 4);
+    SIMPLETEST( "can convert string to numeric? ", Value val(valueFromString("4.5")), val.getNumeric() == 4.5);
+    SIMPLETEST( "can convert string to string? ", Value val(valueFromString("1test2all")), val.getString() == "1test2all");
+    {
+      Value val(valueFromString("{\"c\": 3,\"map\": {\"a\": 1,\"b\": 2}}"));
+      SIMPLETEST( "can convert string to complicated array? ", , val["c"].getNumeric() == 3.0 and val["map"].getType() == Type::ARRAY and val["map"]["a"].getNumeric() == 1 and val["map"]["b"].getNumeric() == 2);
+    }
+    SIMPLETEST( "can convert string to simple array? ", Value val(valueFromString("{\"test\": 4}")), val["test"].getNumeric() == 4.0 );
+  }
+  {
+    std::stringstream sstr; 
+    SIMPLETEST( "can write simple types to a stream: numeric(int) ", sstr << Value(4), sstr.str() == "4");
+    sstr.str("");
+    SIMPLETEST( "can write simple types to a stream: numeric(double) ", sstr << Value(4.5), sstr.str() == "4.5");
+    sstr.str("");
+    SIMPLETEST( "can write simple types to a stream: boolean", sstr << Value(true), sstr.str() == "true");
+    sstr.str("");
+    SIMPLETEST( "can write simple types to a stream: boolean", sstr << Value(false), sstr.str() == "false");
+    sstr.str("");
+    SIMPLETEST( "can write simple types to a stream: string ", sstr << Value("teststr"), sstr.str() == "teststr");
+    sstr.str("");
+    std::map<std::string, Value> innermap; innermap.insert({"a", 1}); innermap.insert({"b", 2}); 
+    std::map<std::string, Value> outermap; outermap.insert({"c", 3}); outermap.insert({"map", Value(innermap)}); 
+    SIMPLETEST( "can write complicated arrays to a stream: ", sstr << Value(outermap), 
+        sstr.str() == "{\"c\": 3,\"map\": {\"a\": 1,\"b\": 2}}");
+  }
 
   std::cout << "=================================================" << std::endl;
   std::cout << "|| Attribute class                             ||"<< std::endl;
@@ -95,7 +124,6 @@ int main( int argc, char** argv ) {
       std::cout << "could not index test file \"" << testdatadir + "/table_testdata.h5" << "\": " << exc.what();
       return -1;
     }
-    std::cout << "size: " << tblidx.size() << std::endl;
     SIMPLETEST("Size of index is correct (the only dset was split in components)?", , tblidx.size() == 2025);
     SIMPLETEST("Dataset was correctly recognized?", , tblidx.front().datasetname == "/rqcd/stoch_discon/stochsolve0/solve_0/data");
     Request request;

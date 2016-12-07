@@ -97,17 +97,9 @@ void prepareSqliteFile(sqlite3 *db) {
 std::string createAttributesInsertionString( Attribute const & attr) {
   std::stringstream sstr;
   // TODO: should find another sol than ignore..
-  if( attr.getType() == Type::ARRAY ) {
-    for( auto const & key : attr.getValue().keys() ) {
-      std::stringstream attrname;
-      attrname << attr.getName() << "[" << key << "]";
-      sstr << createAttributesInsertionString(Attribute(attrname.str(), attr.getValue()[key]));
-    }
-  } else {
-    sstr <<
-      "insert or ignore into attributes(attrname,type) values(\"" <<
-      attr.getName() << "\", \"" << typeToString(attr.getType()) << "\");";
-  }
+  sstr <<
+    "insert or ignore into attributes(attrname,type) values(\"" <<
+    attr.getName() << "\", \"" << typeToString(attr.getType()) << "\");";
   return sstr.str();
 }
 std::string createFilelocInsertionString( DatasetSpec const & dset ) {
@@ -119,26 +111,17 @@ std::string createFilelocInsertionString( DatasetSpec const & dset ) {
   return sstr.str();
 }
 std::string createAttrValueInsertionString( DatasetSpec const & dset, 
-                                   Attribute const & attr ) {
+                                            Attribute const & attr ) {
   std::stringstream sstr;
-  if( attr.getType() == Type::ARRAY ) {
-    // if it is an array, process each element in the same way:
-    for( auto const & elem : attr.getValue().keys() ) {
-      std::stringstream attrname;
-      attrname << attr.getName() << "[" << elem << "]";
-      sstr << createAttrValueInsertionString( dset, Attribute( attrname.str(), attr.getValue()[elem] ) );
-    }
-  } else {
-    sstr <<
-      "insert into attrvalues(attrid,locid,value) values(( select attrid from attributes where attrname=\"" <<
-      attr.getName() << "\"), (select locid from filelocations where locname=\"" << dset.datasetname << "\"),";
-    if(attr.getType() == Type::STRING)
-      //TODO: need to "escape" single quotes? single quotes are escaped by
-      //single quotes..
-      sstr << "\'" << attr.getValue() << "\');";
-    else
-      sstr << attr.getValue() << ");";
-  }
+  sstr <<
+  "insert into attrvalues(attrid,locid,value) values(( select attrid from attributes where attrname=\"" <<
+  attr.getName() << "\"), (select locid from filelocations where locname=\"" << dset.datasetname << "\"),";
+  if(attr.getType() == Type::STRING or attr.getType() == Type::ARRAY)
+    //TODO: need to "escape" single quotes? single quotes are escaped by
+    //single quotes..
+    sstr << "\'" << attr.getValue() << "\');";
+  else
+    sstr << attr.getValue() << ");";
   return sstr.str();
 }
 void insertDataset(sqlite3 *db, Index const & idx ) {
