@@ -124,11 +124,19 @@ int main( int argc, char** argv ) {
       std::cout << "could not index test file \"" << testdatadir + "/table_testdata.h5" << "\": " << exc.what();
       return -1;
     }
-    SIMPLETEST("Size of index is correct (the only dset was split in components)?", , tblidx.size() == 2025);
+    /* 2*8*27: dsets in stochsolve1: 2 smearings, 8 different hpes, 27 momenta.
+     * */
+    SIMPLETEST("Size of index is correct (the dset with table was split)?", , tblidx.size() == 2025+2*8*27);
     SIMPLETEST("Dataset was correctly recognized?", , tblidx.front().datasetname == "/rqcd/stoch_discon/stochsolve0/solve_0/data");
     Request request;
     filterIndexByPostselectionRules(tblidx, request);
-    SIMPLETEST("Empty request leaves index size unchanged?", , tblidx.size() == 2025);
+    SIMPLETEST("Empty request leaves index size unchanged?", , tblidx.size() == 2025+2*8*27);
+    request.dsetrequests.push_back(
+        std::unique_ptr<Hdf5DatasetConditions::NameMatches>(
+          new Hdf5DatasetConditions::NameMatches(".*/stochsolve0/.*")));
+    std::cout << "size: " << tblidx.size() << std::endl;
+    filterIndexByPostselectionRules(tblidx, request);
+    SIMPLETEST("filter only table data?", , tblidx.size() == 2025);
     request.attrrequests.push_back(AttributeRequest("interpolator", AttributeConditions::Equals(7)));
     filterIndexByPostselectionRules(tblidx, request);
     SIMPLETEST("request returns all interp=7 values?", , tblidx.size() == 54);

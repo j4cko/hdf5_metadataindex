@@ -70,6 +70,15 @@ AttributeRequest parseAttributeRequest(Json::Value const & root, std::string con
     throw std::runtime_error("json value is not parsable to Request.");
   }
 }
+Hdf5DatasetRequest parseDsetRequest(Json::Value const & root, std::string const & name ) {
+  assert(root.isMember(name));
+  if( name == "matches" and root[name].isString() ) {
+    return std::unique_ptr<Hdf5DatasetConditions::NameMatches>(
+        new Hdf5DatasetConditions::NameMatches(root["matches"].asString()));
+  } else {
+    throw std::runtime_error("unknown datasetrequest (or arguments could not be handled)");
+  }
+}
 FileRequest parseFileRequest(Json::Value const & root, std::string const & name) {
   assert(root.isMember(name));
   if( name == "matches" and root[name].isString() ) {
@@ -103,6 +112,10 @@ Request queryToRequest(std::string const & query) {
     } else if ( name == std::string("file") ) {
       for( auto condname : root["file"].getMemberNames()) {
         req.filerequests.push_back(parseFileRequest(root["file"], condname));
+      }
+    } else if ( name == std::string("dataset") ) {
+      for( auto condname : root["dataset"].getMemberNames()) {
+        req.dsetrequests.push_back(parseDsetRequest(root["dataset"], condname));
       }
     } else if ( name == std::string("luacode") ) {
       throw std::runtime_error("lua postprocessing is not yet implemented.");

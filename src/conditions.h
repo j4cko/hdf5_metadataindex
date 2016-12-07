@@ -223,4 +223,19 @@ class Mtime : public FileCondition {
     int mtime;
 };
 }
+namespace Hdf5DatasetConditions {
+  class NameMatches : public Hdf5DatasetCondition {
+    public:
+      explicit NameMatches(std::string const & regex_) : regex(std::regex(regex_)) {}
+      explicit NameMatches(std::regex const & regex_) : regex(regex_) {}
+      bool matches(std::string datasetname, DatasetChunkSpec loc) const {
+        return std::regex_match(datasetname, regex);
+      }
+      std::unique_ptr<Hdf5DatasetCondition> clone() const {
+        return std::unique_ptr<NameMatches>(new NameMatches(regex));
+      }
+    private:
+      std::regex regex;
+  };
+}
 #endif

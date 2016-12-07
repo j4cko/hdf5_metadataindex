@@ -30,7 +30,18 @@ void filterIndexByFileRequests(Index& idx, std::vector<FileRequest> const & req)
       return (not matches);
     }), idx.end());
 }
+void filterIndexByHdf5DatasetRequests(Index& idx, std::vector<Hdf5DatasetRequest> const & req) {
+  idx.erase( std::remove_if( idx.begin(), idx.end(),
+    [&req](DatasetSpec const & dsetspec) {
+      bool matches = true;
+      for( auto const & dsetreq : req ) {
+        matches &= dsetreq->matches(dsetspec.datasetname, dsetspec.location);
+      }
+      return (not matches);
+    }), idx.end());
+}
 void filterIndexByPostselectionRules(Index& idx, Request const & req) {
+  filterIndexByHdf5DatasetRequests(idx, req.dsetrequests);
   filterIndexByAttributeRequests(idx, req.attrrequests);
   filterIndexByFileRequests(idx, req.filerequests);
 }

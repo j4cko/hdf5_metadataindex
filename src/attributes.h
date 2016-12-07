@@ -391,7 +391,13 @@ struct DatasetChunkSpec {
   DatasetChunkSpec() : begin(-1) {}; //default: read complete dataset.
   int begin;
 };
+class Hdf5DatasetCondition {
+  public:
+    virtual bool matches(std::string datasetname, DatasetChunkSpec loc) const = 0;
+    virtual std::unique_ptr<Hdf5DatasetCondition> clone() const = 0;
+};
 typedef std::unique_ptr<FileCondition> FileRequest;
+typedef std::unique_ptr<Hdf5DatasetCondition> Hdf5DatasetRequest;
 struct DatasetSpec {
   DatasetSpec(std::vector<Attribute> const & attr, std::string const & dsetname, File const & file_, DatasetChunkSpec const & loc) : attributes(attr), datasetname(dsetname), file(file_), location(loc) {};
   DatasetSpec() : attributes(), datasetname(""), file({"", 0}), location() {};
@@ -404,6 +410,7 @@ struct DatasetSpec {
 typedef std::vector<DatasetSpec> Index;
 struct Request {
   std::vector<AttributeRequest> attrrequests;
+  std::vector<Hdf5DatasetRequest> dsetrequests;
   std::vector<FileRequest>      filerequests;
   //TODO later:
   //std::vector<LuaRequest>       luarequests;
