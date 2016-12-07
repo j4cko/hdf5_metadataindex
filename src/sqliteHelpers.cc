@@ -75,6 +75,7 @@ void prepareSqliteFile(sqlite3 *db) {
       "create table filelocations("
         "locid  integer primary key asc,"
         "locname text,"
+        "row integer,"
         "fileid integer);"
       "create table attrvalues("
         "valueid  integer primary key asc,"
@@ -105,8 +106,8 @@ std::string createAttributesInsertionString( Attribute const & attr) {
 std::string createFilelocInsertionString( DatasetSpec const & dset ) {
   std::stringstream sstr;
   sstr << 
-    "insert into filelocations(locname,fileid) values('" << dset.datasetname << 
-    "',(select fileid from files where fname = '" << dset.file.filename << 
+    "insert into filelocations(locname,row,fileid) values('" << dset.datasetname << 
+    "',"<<dset.location.begin << ",(select fileid from files where fname = '" << dset.file.filename << 
     "' and mtime = " << dset.file.mtime << "));";
   return sstr.str();
 }
@@ -114,8 +115,8 @@ std::string createAttrValueInsertionString( DatasetSpec const & dset,
                                             Attribute const & attr ) {
   std::stringstream sstr;
   sstr <<
-  "insert into attrvalues(attrid,locid,value) values(( select attrid from attributes where attrname=\"" <<
-  attr.getName() << "\"), (select locid from filelocations where locname=\"" << dset.datasetname << "\"),";
+  "insert into attrvalues(attrid,locid,value) values(( select attrid from attributes where attrname=\'" <<
+  attr.getName() << "\'), (select locid from filelocations where locname=\'" << dset.datasetname << "\' and row=" << dset.location.begin << "),";
   if(attr.getType() == Type::STRING or attr.getType() == Type::ARRAY)
     //TODO: need to "escape" single quotes? single quotes are escaped by
     //single quotes..

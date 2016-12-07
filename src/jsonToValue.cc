@@ -1,6 +1,6 @@
 #include "jsonToValue.h"
 bool isRepresentableAsValue(Json::Value const & json) {
-  return (json.isDouble() or json.isBool() or json.isString());
+  return (json.isDouble() or json.isBool() or json.isString() or json.isArray() or json.isObject());
 }
 Value jsonValueToValue(Json::Value const & json) {
   if( json.isDouble() ) 
@@ -10,8 +10,15 @@ Value jsonValueToValue(Json::Value const & json) {
   else if( json.isString() )
     return Value(json.asString());
   else if( json.isArray() ){
-    std::cout << "here, we should parse the json array and return an array with keys \"0\", \"1\",..." << std::endl;
-    throw std::runtime_error("json arrays are not yet implemented.");
+    auto size = json.size();
+    std::map<std::string, Value> mmap;
+    std::stringstream sstr;
+    for( auto i = 0u; i < size; ++i)
+    {
+      sstr.clear(); sstr.str(""); sstr << i;
+      mmap.insert({sstr.str(), jsonValueToValue(json[i])});
+    }
+    return Value(mmap);
   }
   else if( json.isObject() ){
     auto names = json.getMemberNames();
@@ -26,9 +33,6 @@ Value jsonValueToValue(Json::Value const & json) {
   }
 }
 AttributeRequest parseAttributeRequest(Json::Value const & root, std::string const & name) {
-  if( root[name].isArray() ) {
-    throw std::runtime_error("array requests are not implemented.");
-  }
   if( isRepresentableAsValue(root[name]) ) {
     return AttributeRequest(name, AttributeConditions::Equals(jsonValueToValue(root[name])));
   }

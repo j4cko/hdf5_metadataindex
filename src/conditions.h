@@ -15,7 +15,7 @@ class Equals : public AttributeCondition {
       return std::unique_ptr<Equals>(new Equals(val)); }
     std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
-      if( val.getType() == Type::STRING )
+      if( val.getType() == Type::STRING or val.getType() == Type::ARRAY )
         sstr << valentryname << " = '" << val << "' ";
       else
         sstr << valentryname << " = " << val << " ";
@@ -36,7 +36,7 @@ class NotEquals : public AttributeCondition {
       return std::unique_ptr<NotEquals>(new NotEquals(val)); }
     std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
-      if( val.getType() == Type::STRING )
+      if( val.getType() == Type::STRING or val.getType() == Type::ARRAY )
         sstr << valentryname << " != '" << val << "' ";
       else
         sstr << valentryname << " != " << val << " ";
@@ -58,7 +58,7 @@ class Range: public AttributeCondition {
     std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
       assert(min.getType() == max.getType());
-      if( min.getType() == Type::STRING )
+      if( min.getType() == Type::STRING or min.getType() == Type::ARRAY )
         sstr << valentryname << " between '" << min << "' and '" << max << "' ";
       else
         sstr << valentryname << " between " << min << " and " << max << " ";
@@ -77,7 +77,7 @@ class Min : public AttributeCondition {
       return std::unique_ptr<Min>(new Min(min)); }
     std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
-      if( min.getType() == Type::STRING )
+      if( min.getType() == Type::STRING or min.getType() == Type::ARRAY )
         sstr << valentryname << " >= '" << min << "' ";
       else
         sstr << valentryname << " >= " << min << " ";
@@ -95,7 +95,7 @@ class Max : public AttributeCondition {
       return std::unique_ptr<Max>(new Max(max)); }
     std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
-      if( max.getType() == Type::STRING )
+      if( max.getType() == Type::STRING or max.getType() == Type::ARRAY )
         sstr << valentryname << " <= '" << max << "' ";
       else
         sstr << valentryname << " <= " << max << " ";
@@ -142,12 +142,12 @@ class Or : public AttributeCondition {
       sstr << "( ";
       for( auto i = 0u; i < vals.size() - 1; i++ ){
         assert(vals[i].getType() == typecheck);
-        if( typecheck == Type::STRING )
+        if( typecheck == Type::STRING or typecheck == Type::ARRAY )
           sstr << valentryname << " = '" << vals[i] << "' or ";
         else
           sstr << valentryname << " = " << vals[i] << " or ";
       }
-      if( typecheck == Type::STRING )
+      if( typecheck == Type::STRING or typecheck == Type::ARRAY )
         sstr << valentryname << " = '" << vals.back() << "' or ";
       else
         sstr << valentryname << " = " << vals.back() << " )";
