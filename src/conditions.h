@@ -12,7 +12,7 @@ class Equals : public AttributeCondition {
     bool matches(Attribute const & attr, std::string const & reqname) const {
       return attr.getValue() == val and attr.getName() == reqname; }
     std::unique_ptr<AttributeCondition> clone() const { 
-      return std::make_unique<Equals>(val); }
+      return std::unique_ptr<Equals>(new Equals(val)); }
     std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
       if( val.getType() == Type::STRING )
@@ -33,7 +33,7 @@ class NotEquals : public AttributeCondition {
       else return false;
     }
     std::unique_ptr<AttributeCondition> clone() const { 
-      return std::make_unique<NotEquals>(val); }
+      return std::unique_ptr<NotEquals>(new NotEquals(val)); }
     std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
       if( val.getType() == Type::STRING )
@@ -54,7 +54,7 @@ class Range: public AttributeCondition {
     bool matches(Attribute const & attr, std::string const & reqname) const {
       return (attr.getType() == min.getType() && attr.getValue() >= min and attr.getValue() <= max and attr.getName() == reqname); }
     std::unique_ptr<AttributeCondition> clone() const { 
-      return std::make_unique<Range>(min, max); }
+      return std::unique_ptr<Range>(new Range(min, max)); }
     std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
       assert(min.getType() == max.getType());
@@ -74,7 +74,7 @@ class Min : public AttributeCondition {
     bool matches(Attribute const & attr, std::string const & reqname) const {
       return (attr.getType() == min.getType() && attr.getValue() >= min and attr.getName() == reqname); }
     std::unique_ptr<AttributeCondition> clone() const { 
-      return std::make_unique<Min>(min); }
+      return std::unique_ptr<Min>(new Min(min)); }
     std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
       if( min.getType() == Type::STRING )
@@ -92,7 +92,7 @@ class Max : public AttributeCondition {
     bool matches(Attribute const & attr, std::string const & reqname) const {
       return (attr.getType() == max.getType() && attr.getValue() >= max and attr.getName() == reqname); }
     std::unique_ptr<AttributeCondition> clone() const { 
-      return std::make_unique<Max>(max); }
+      return std::unique_ptr<Max>(new Max(max)); }
     std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
       if( max.getType() == Type::STRING )
@@ -113,7 +113,7 @@ class Present : public AttributeCondition {
     bool matches(Attribute const & attr, std::string const & reqname) const {
       return attr.getName() == reqname; }
     std::unique_ptr<AttributeCondition> clone() const { 
-      return std::make_unique<Present>(present); }
+      return std::unique_ptr<Present>(new Present(present)); }
   private:
     bool present;
 };
@@ -134,7 +134,7 @@ class Or : public AttributeCondition {
       return (match and (attr.getName() == reqname));
     }
     std::unique_ptr<AttributeCondition> clone() const { 
-      return std::make_unique<Or>(vals); }
+      return std::unique_ptr<Or>(new Or(vals)); }
     std::string getSqlValueDescription(std::string const & valentryname) const override { 
       std::stringstream sstr;
       assert(vals.size() > 0);
@@ -165,7 +165,7 @@ class Matches : public AttributeCondition {
       sstr << attr.getValue();
       return attr.getName() == reqname and std::regex_match(sstr.str(), regex); }
     std::unique_ptr<AttributeCondition> clone() const { 
-      return std::make_unique<Matches>(regex); }
+      return std::unique_ptr<Matches>(new Matches(regex)); }
   private:
     std::regex regex;
 };
