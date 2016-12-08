@@ -114,6 +114,18 @@ int main( int argc, char** argv ) {
   SIMPLETEST( "attribute returns type", Attribute attr("exampleattr", 5);, attr.getType() == Type::NUMERIC);
 
   std::cout << "=================================================" << std::endl;
+  std::cout << "|| Attribute matching & requsts                ||"<< std::endl;
+  std::cout << "=================================================" << std::endl;
+  auto attr = Attribute("test", 4);
+  auto equals4 = AttributeConditions::Equals(4);
+  // this is okay:
+  SIMPLETEST( "attribute is matched by equals-condition", ,equals4.matches(attr, "test"));
+  // this gives a memleak:
+  auto areq = AttributeRequest("test", equals4);
+  SIMPLETEST( "attributerequest matches attribute", ,areq.matches(attr));
+
+  
+  std::cout << "=================================================" << std::endl;
   std::cout << "|| Read table                                  ||"<< std::endl;
   std::cout << "=================================================" << std::endl;
   {
