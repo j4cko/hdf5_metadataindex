@@ -22,8 +22,14 @@ information.
   * **numeric**
   * **boolean**
   * **string**
+  * **array** (which is a associative container holding any of the other values)
 
-and lists thereof (with the exception of strings, currently).
+Attributes are derived from the Hdf5 file: Datasets have their own (hdf5)
+attributes and inherit all attributes of all their containing groups.
+If a group contains a "table" dataset (i.e., it contains a dataset which has a
+attribute "CLASS" holding the value "TABLE"), all datasets in the same group
+(usually, there should be just one) are split into all positions described by
+the table.
 
 ## Requests ##
 
@@ -31,6 +37,8 @@ A request consists of several sections (each can be omitted)
 
   * `AttributeRequest`s demand that attributes fulfill certain conditions,
   * `FileRequest`s can be used to filter for file name and date,
+  * `Hdf5DatasetRequest` filters for dataset names and the inner structure of
+    the file.
   * `LuaRequest`s are currently not implemented but will allow to have more
     complex logic in requests.
 
@@ -152,11 +160,5 @@ to these values, see above for more examples).
 
 ## Other ToDo ##
   * provide a better **CLI interface**:
-    - check for changes in files (easily done with the mtime that is saved)
     - output formats: print all results with all attributes, print only
       filenames, only datasetnames, both together, ...
-  * **HDF5 tables** (as written out by qdp): Tables are often stored along with
-    the data (in these cases, a group holds two datasets, `table[0-9]*` and
-    `data[0-9]*`). This is important information on the data layout in the
-    dataset and is in principle metadata. Evaluating these tables could return
-    information of hyperslab, blocks and so on that need to be read.
