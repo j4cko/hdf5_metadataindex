@@ -26,6 +26,7 @@ class AttributeCondition {
   public:
     virtual bool matches(Attribute const & attr, std::string const & reqname) const = 0;
     virtual std::unique_ptr<AttributeCondition> clone() const = 0;
+    virtual ~AttributeCondition() {} // need to implement this
     //TODO: further abstraction for cases that do not rely on SQL?
     //these sql request are only supposed to be a prefiltering, the final decision if
     //an attribute matches the condition is done by the routine matches!
@@ -64,6 +65,7 @@ class FileCondition {
   public:
     virtual bool matches(File const & file) const = 0;
     virtual std::unique_ptr<FileCondition> clone() const = 0;
+    virtual ~FileCondition() {}
 };
 struct DatasetChunkSpec {
   DatasetChunkSpec(int const & start) : begin(start) {}
@@ -74,6 +76,7 @@ class Hdf5DatasetCondition {
   public:
     virtual bool matches(std::string datasetname, DatasetChunkSpec loc) const = 0;
     virtual std::unique_ptr<Hdf5DatasetCondition> clone() const = 0;
+    virtual ~Hdf5DatasetCondition() {};
 };
 typedef std::unique_ptr<FileCondition> FileRequest;
 typedef std::unique_ptr<Hdf5DatasetCondition> Hdf5DatasetRequest;
