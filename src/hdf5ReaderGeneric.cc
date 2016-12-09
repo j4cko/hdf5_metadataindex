@@ -57,9 +57,20 @@ H5ReaderGeneric::read(DatasetSpec const & dsetspec) {
   }
 
   auto dspace = H5Dget_space(dsetid);
+  if( size < 0 ) {
+    H5Tclose(dtype);
+    H5Dclose(dsetid);
+    throw std::runtime_error("could not open dataspace");
+  }
   auto ndims  = H5Sget_simple_extent_ndims(dspace);
   hsize_t * dims = new hsize_t[ndims];
   auto status = H5Sget_simple_extent_dims(dspace, dims, NULL);
+  if( status < 0 ) {
+    H5Sclose(dspace);
+    H5Tclose(dtype);
+    H5Dclose(dsetid);
+    throw std::runtime_error("could not get data space extent.");
+  }
 
   hsize_t numberOfDoubles = 0;
   hid_t file_space_id = -1;
@@ -79,7 +90,8 @@ H5ReaderGeneric::read(DatasetSpec const & dsetspec) {
       // read full dataset, serialize
       numberOfDoubles = dims[0]*dims[1];
       file_space_id   = H5S_ALL;
-    } else if ( dsetspec.location.begin >= dims[0] ) {
+    //begin cannot be negative, see above. A cast is save:
+    } else if ( (std::size_t)dsetspec.location.begin >= dims[0] ) {
       H5Sclose(dspace);
       H5Tclose(dtype);
       H5Dclose(dsetid);
@@ -91,6 +103,12 @@ H5ReaderGeneric::read(DatasetSpec const & dsetspec) {
       const hssize_t offsets[2] = {dsetspec.location.begin, 0u};
       file_space_id   = H5Screate_simple(2,dspacedims,NULL);
       status = H5Soffset_simple(file_space_id, offsets);
+      if( status < 0 ) {
+        H5Sclose(dspace);
+        H5Tclose(dtype);
+        H5Dclose(dsetid);
+        throw std::runtime_error("could not set data space offset.");
+      }
     }
   }
   
@@ -102,7 +120,19 @@ H5ReaderGeneric::read(DatasetSpec const & dsetspec) {
   }
   double * buf = new double[numberOfDoubles];
   mem_space_id = H5Screate_simple(1, &numberOfDoubles, NULL);
+  if( mem_space_id < 0 ) {
+    H5Sclose(dspace);
+    H5Tclose(dtype);
+    H5Dclose(dsetid);
+    throw std::runtime_error("could create mem dataspace.");
+  }
   status = H5Dread(dsetid, H5T_NATIVE_DOUBLE, H5S_ALL, file_space_id, H5P_DEFAULT, buf);
+  if( status < 0 ) {
+    H5Sclose(dspace);
+    H5Tclose(dtype);
+    H5Dclose(dsetid);
+    throw std::runtime_error("could read dataset.");
+  }
 
   res.resize(numberOfDoubles/2);
   for( auto i = 0u; i < numberOfDoubles / 2; ++i) {

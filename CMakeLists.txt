@@ -24,6 +24,9 @@ endmacro(use_cxx11)
 
 use_cxx11()
 
+SET(CMAKE_CXX_FLAGS_RELEASE "-O3")
+SET(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wall -Werror")
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 find_package (JsonCpp REQUIRED)
 include_directories(${JSONCPP_INCLUDE_DIRS})
