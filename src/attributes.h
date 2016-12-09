@@ -386,6 +386,7 @@ class FileCondition {
   public:
     virtual bool matches(File const & file) const = 0;
     virtual std::unique_ptr<FileCondition> clone() const = 0;
+    virtual ~FileCondition() {}
 };
 struct DatasetChunkSpec {
   DatasetChunkSpec(int const & start) : begin(start) {}
@@ -396,6 +397,7 @@ class Hdf5DatasetCondition {
   public:
     virtual bool matches(std::string datasetname, DatasetChunkSpec loc) const = 0;
     virtual std::unique_ptr<Hdf5DatasetCondition> clone() const = 0;
+    virtual ~Hdf5DatasetCondition() {};
 };
 typedef std::unique_ptr<FileCondition> FileRequest;
 typedef std::unique_ptr<Hdf5DatasetCondition> Hdf5DatasetRequest;
