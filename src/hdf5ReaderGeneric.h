@@ -9,7 +9,7 @@
 #include <sstream>
 #include <iostream>
 namespace rqcd_hdf5_reader_generic {
-using namespace rqcd_hdf5_index;
+using namespace rqcd_file_index;
 class H5ReaderGeneric{
   public:
   H5ReaderGeneric(File const & file);

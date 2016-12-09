@@ -9,7 +9,7 @@
 #include "postselection.h"
 #include "hdf5ReaderGeneric.h"
 
-using namespace rqcd_hdf5_index;
+using namespace rqcd_file_index;
 using namespace rqcd_hdf5_reader_generic;
 
 Index getMatchingDatasetSpecs(sqlite3 *db, Request const & req) {

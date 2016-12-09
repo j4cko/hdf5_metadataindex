@@ -3,16 +3,14 @@ project (Hdf5MetadataIndex)
 
 set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
-add_executable(indexHdf5 "${CMAKE_SOURCE_DIR}/src/indexer.cc" src/value.cc src/attributes.cc
-  src/h5helpers.cc src/indexHdf5.cc src/sqliteHelpers.cc src/parseJson.cc)
-add_executable(readHdf5 src/readHdf5.cc src/hdf5ReaderGeneric.cc src/value.cc src/attributes.cc
-  src/h5helpers.cc src/indexHdf5.cc src/sqliteHelpers.cc src/postselection.cc
-  src/parseJson.cc)
-add_executable(queryDb "${CMAKE_SOURCE_DIR}/src/queryDb.cc" src/indexHdf5.cc
-  src/value.cc src/attributes.cc src/h5helpers.cc src/sqliteHelpers.cc src/postselection.cc
-  src/parseJson.cc)
-add_executable(tests src/tests.cc src/indexHdf5.cc src/value.cc src/attributes.cc
-  src/h5helpers.cc src/sqliteHelpers.cc src/postselection.cc src/parseJson.cc)
+add_library( fileindex src/value.cc src/attributes.cc src/postselection.cc src/parseJson.cc )
+add_library( hdf5index src/h5helpers.cc src/indexHdf5.cc )
+add_library( sqliteindex src/sqliteHelpers.cc )
+
+add_executable(indexHdf5 src/indexer.cc)
+add_executable(readHdf5 src/readHdf5.cc src/hdf5ReaderGeneric.cc )
+add_executable(queryDb src/queryDb.cc )
+add_executable(tests src/tests.cc )
 
 macro(use_cxx11)
   if (CMAKE_VERSION VERSION_LESS "3.1")
@@ -39,10 +37,10 @@ find_package (SQLite3 REQUIRED)
 include_directories(${SQLITE3_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${SQLITE3_LIBRARIES})
 
-target_link_libraries( indexHdf5 ${LIBS} )
-target_link_libraries( readHdf5 ${LIBS} )
-target_link_libraries( queryDb ${LIBS} )
-target_link_libraries( tests ${LIBS} )
+target_link_libraries( indexHdf5 sqliteindex hdf5index fileindex ${LIBS} )
+target_link_libraries( readHdf5 sqliteindex hdf5index fileindex ${LIBS} )
+target_link_libraries( queryDb sqliteindex fileindex ${LIBS} )
+target_link_libraries( tests sqliteindex hdf5index fileindex ${LIBS} )
 
 install(TARGETS indexHdf5 queryDb tests
         RUNTIME DESTINATION bin

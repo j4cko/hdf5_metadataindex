@@ -5,7 +5,7 @@
 #include <map>
 #include <vector>
 
-namespace rqcd_hdf5_index {
+namespace rqcd_file_index {
 enum class Type {
   NUMERIC,
   BOOLEAN,

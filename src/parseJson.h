@@ -5,7 +5,7 @@
 #include "value.h"
 #include "attributes.h"
 
-namespace rqcd_hdf5_index {
+namespace rqcd_file_index {
 bool isRepresentableAsValue(Json::Value const & json);
 Value jsonValueToValue(Json::Value const & json);
 AttributeRequest parseAttributeRequest(Json::Value const & root, std::string const & name);

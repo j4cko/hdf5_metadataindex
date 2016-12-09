@@ -4,7 +4,7 @@
 #include "attributes.h"
 #include "indexHdf5.h"
 
-namespace rqcd_hdf5_index {
+namespace rqcd_file_index {
 namespace sqlite_helpers {
 void prepareSqliteFile(sqlite3 * db);
 void insertDataset(sqlite3 *db, Index const & idx);

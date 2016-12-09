@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <sstream>
 
-namespace rqcd_hdf5_index {
+namespace rqcd_file_index {
 Value readArray( hid_t type, std::size_t idx, void const * buf, std::size_t const & size){
   hid_t arrtype = H5Tget_member_type(type, idx);
   auto ndims = H5Tget_array_ndims(arrtype);
@@ -106,50 +106,6 @@ Value readTable(hid_t link, const char* name) {
   for( int i = 0; i < nfields; i++) { delete[] fieldnames[i]; }
   delete[] fieldsizes; delete[] fieldoffsets; delete[] fieldnames; 
   return Value(outerTable);
-}
-void mergeIndex( Index & res, Index const & idxToMerge ) {
-  for ( auto const & from : idxToMerge )
-    res.push_back(from);
-}
-std::vector<Attribute> tableFieldsToAttributes(Value const & table) {
-  std::vector<Attribute> res;
-  for( auto const & key : table["fields"].keys() ) {
-    res.push_back(Attribute(key, Value(table["fields"][key])));
-  }
-  return res;
-}
-Index splitDsetSpecWithTable( DatasetSpec const & dset, Value const & table ) {
-  /*
-   * splits a dataset specifier that is described by a table into several
-   * DatasetSpecs, each holding the attributes from the table and the correct
-   * location within the dataset.
-   */
-  Index res;
-  for( auto const & req : table.getMap() ) {
-    auto attrs = tableFieldsToAttributes(req.second);
-    DatasetSpec newdset(dset);
-    for( auto && attr : attrs )
-      newdset.attributes.push_back(std::move(attr));
-    newdset.location.begin = (int)(req.second["row"].getNumeric());
-    res.push_back(std::move(newdset));
-  }
-  return res;
-}
-Index expandIndex(Index const & idx, std::map<std::string, Value> const & tables) {
-  Index res;
-  for( auto const & elem : idx ) {
-    // for each DatasetSpec in the Index, check if there is a table describing
-    // the data contents
-    std::string tablename = elem.datasetname.substr(0, elem.datasetname.rfind("/"));
-    if( tables.count( tablename ) > 0) {
-      // dset has table:
-      mergeIndex( res, splitDsetSpecWithTable(elem, tables.at(tablename)) );
-    } else {
-      // doesn't have table, add to result index:
-      res.push_back(elem);
-    }
-  }
-  return res;
 }
 
 bool isTable( hid_t link, const char* name ) {
@@ -255,15 +211,6 @@ herr_t h5_attr_iterate( hid_t o_id, const char *name, const H5A_info_t *attrinfo
   res &= H5Aclose(attr_id);
   return 0;
 }
-std::string getFullpath( Index const & idxstack ) {
-  std::string fullpath("");
-  for( auto const & elem : idxstack) {
-    // avoid double slashes at the beginning (first / root elem of idxstack is
-    // the file itself
-    if( not elem.datasetname.empty() ) fullpath += "/" + elem.datasetname;
-  }
-  return fullpath;
-}
 DatasetSpec processvector( Index const & idxstack ) {
   //copy all attributes along the hierarchical way from the root node to the
   //current node into thisspec:
@@ -328,7 +275,7 @@ herr_t h5_link_iterate( hid_t thislink, const char *name, const H5L_info_t *info
   else return -2; //unimplemented datatype
   return 0;
 }
-Index indexFile(std::string filename) {
+Index indexHdf5File(std::string filename) {
   //checks:
   if( not H5DataHelpers::h5_file_exists(filename) ) {
     std::stringstream sstr;
@@ -365,17 +312,5 @@ Index indexFile(std::string filename) {
                                                   "traversal of the file.");
   //returning only the datasets and not the stack (which should be empty anyway)
   return expandIndex(std::get<1>(data), std::get<2>(data));
-}
-void printIndex(Index const & idx, std::ostream& os) {
-  for ( auto const & dataset : idx ) {
-    os << "dataset \"" << dataset.datasetname << "\" (from file \""
-      << dataset.file.filename << "\" and row " << dataset.location.begin << ")" <<
-      " has the following attributes:" << std::endl;
-    for ( auto attr : dataset.attributes ) {
-      os << "  - " << attr.getName() 
-        << " (" << typeToString(attr.getType()) << ") = "
-        << attr.getValue() << std::endl;
-    }
-  }
 }
 }

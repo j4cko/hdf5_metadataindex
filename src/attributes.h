@@ -9,7 +9,7 @@
 #include <cassert>
 #include "value.h"
 
-namespace rqcd_hdf5_index {
+namespace rqcd_file_index {
 class Attribute {
   public:
     Attribute(std::string const & name, Value const & val_) : 
@@ -104,5 +104,11 @@ Attribute attributeFromStrings(std::string const & name, std::string const & val
         std::string const & typestr);
 
 Value valueFromString(std::string const & str);
+void mergeIndex( Index & res, Index const & idxToMerge );
+std::string getFullpath( Index const & idxstack );
+void printIndex(Index const & idx, std::ostream& os);
+std::vector<Attribute> tableFieldsToAttributes(Value const & table);
+Index splitDsetSpecWithTable( DatasetSpec const & dset, Value const & table );
+Index expandIndex(Index const & idx, std::map<std::string, Value> const & tables);
 }
 #endif

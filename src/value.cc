@@ -1,6 +1,6 @@
 #include <sstream>
 #include "parseJson.h"
-namespace rqcd_hdf5_index {
+namespace rqcd_file_index {
 std::string typeToString(Type const & type) {
   switch(type) {
     case Type::NUMERIC: return "numeric";

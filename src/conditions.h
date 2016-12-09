@@ -7,7 +7,7 @@
 #include <cassert>
 #include "attributes.h"
 
-namespace rqcd_hdf5_index {
+namespace rqcd_file_index {
 namespace AttributeConditions {
 class Equals : public AttributeCondition { 
   public:

@@ -28,7 +28,7 @@ int itest = 0;
     return itest;\
   }}
 
-using namespace rqcd_hdf5_index;
+using namespace rqcd_file_index;
 
 int main( int argc, char** argv ) {
   std::string testdatadir(".");
@@ -130,7 +130,7 @@ int main( int argc, char** argv ) {
   {
     Index tblidx;
     try {
-       tblidx = indexFile(testdatadir + "/table_testdata.h5");
+       tblidx = indexHdf5File(testdatadir + "/table_testdata.h5");
     } catch (std::exception const & exc) {
       std::cout << "could not index test file \"" << testdatadir + "/table_testdata.h5" << "\": " << exc.what();
       return -1;
