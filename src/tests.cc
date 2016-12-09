@@ -120,7 +120,6 @@ int main( int argc, char** argv ) {
   auto equals4 = AttributeConditions::Equals(4);
   // this is okay:
   SIMPLETEST( "attribute is matched by equals-condition", ,equals4.matches(attr, "test"));
-  // this gives a memleak:
   auto areq = AttributeRequest("test", equals4);
   SIMPLETEST( "attributerequest matches attribute", ,areq.matches(attr));
 
