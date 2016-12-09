@@ -1,4 +1,5 @@
 #include "hdf5ReaderGeneric.h"
+namespace rqcd_hdf5_reader_generic {
 H5ReaderGeneric::H5ReaderGeneric(File const & file) : H5ReaderGeneric(file.filename) {
   if( not checkMtime(file) )
     std::cerr << "WARNING: file is newer than the requested." << std::endl;
@@ -117,4 +118,5 @@ H5ReaderGeneric::read(DatasetSpec const & dsetspec) {
 }
 bool H5ReaderGeneric::checkMtime(File const & file) {
   return (file.mtime <= H5DataHelpers::getFileModificationTime(file.filename));
+}
 }

@@ -1,4 +1,5 @@
-#include "jsonToValue.h"
+#include "parseJson.h"
+namespace rqcd_hdf5_index {
 bool isRepresentableAsValue(Json::Value const & json) {
   return (json.isDouble() or json.isBool() or json.isString() or json.isArray() or json.isObject());
 }
@@ -127,4 +128,5 @@ Request queryToRequest(std::string const & query) {
   }
 
   return req;
+}
 }

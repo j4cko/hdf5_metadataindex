@@ -8,6 +8,8 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+namespace rqcd_hdf5_reader_generic {
+using namespace rqcd_hdf5_index;
 class H5ReaderGeneric{
   public:
   H5ReaderGeneric(File const & file);
@@ -21,4 +23,5 @@ class H5ReaderGeneric{
   hid_t file_id;
   bool checkMtime(File const & file);
 };
+}
 #endif

@@ -1,17 +1,20 @@
+#include <iostream>
+#include <sstream>
+#include <list>
 #include "attributes.h"
 #include "conditions.h"
 #include "sqliteHelpers.h"
-#include <iostream>
-#include <sstream>
-#include "jsonToValue.h"
+#include "parseJson.h"
 #include "h5helpers.h"
 #include "postselection.h"
 #include "hdf5ReaderGeneric.h"
-#include <list>
+
+using namespace rqcd_hdf5_index;
+using namespace rqcd_hdf5_reader_generic;
 
 Index getMatchingDatasetSpecs(sqlite3 *db, Request const & req) {
-  auto ids = getLocIdsMatchingPreSelection(db, req);
-  Index idx = idsToIndex(db, ids);
+  auto ids = sqlite_helpers::getLocIdsMatchingPreSelection(db, req);
+  Index idx = sqlite_helpers::idsToIndex(db, ids);
   filterIndexByPostselectionRules(idx, req);
   return idx;
 }

@@ -1,6 +1,7 @@
 #include "postselection.h"
 #include <iostream>
 
+namespace rqcd_hdf5_index {
 void filterIndexByAttributeRequests(Index& idx, std::vector<AttributeRequest> const & req) {
   idx.erase( std::remove_if( idx.begin(), idx.end(),
     [&req](DatasetSpec const & dsetspec) {
@@ -44,4 +45,5 @@ void filterIndexByPostselectionRules(Index& idx, Request const & req) {
   filterIndexByHdf5DatasetRequests(idx, req.dsetrequests);
   filterIndexByAttributeRequests(idx, req.attrrequests);
   filterIndexByFileRequests(idx, req.filerequests);
+}
 }

@@ -1,10 +1,13 @@
 #ifndef __CONDITIONS_H__
 #define __CONDITIONS_H__
-#include "attributes.h"
-#include <sstream>
+#include <string>
 #include <iostream>
+#include <sstream>
 #include <regex>
+#include <cassert>
+#include "attributes.h"
 
+namespace rqcd_hdf5_index {
 namespace AttributeConditions {
 class Equals : public AttributeCondition { 
   public:
@@ -170,8 +173,6 @@ class Matches : public AttributeCondition {
     std::regex regex;
 };
 }
-
-
 namespace FileConditions {
 class NameMatches : public FileCondition {
   public:
@@ -237,5 +238,6 @@ namespace Hdf5DatasetConditions {
     private:
       std::regex regex;
   };
+}
 }
 #endif

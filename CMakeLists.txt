@@ -3,18 +3,16 @@ project (Hdf5MetadataIndex)
 
 set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
-add_executable(indexHdf5 "${CMAKE_SOURCE_DIR}/src/indexer.cc" src/attributes.cc
-  src/h5helpers.cc src/indexHdf5.cc src/sqliteHelpers.cc  src/readTable.cc
-  src/jsonToValue.cc)
-add_executable(readHdf5 src/readHdf5.cc src/hdf5ReaderGeneric.cc src/attributes.cc
+add_executable(indexHdf5 "${CMAKE_SOURCE_DIR}/src/indexer.cc" src/value.cc src/attributes.cc
+  src/h5helpers.cc src/indexHdf5.cc src/sqliteHelpers.cc src/parseJson.cc)
+add_executable(readHdf5 src/readHdf5.cc src/hdf5ReaderGeneric.cc src/value.cc src/attributes.cc
   src/h5helpers.cc src/indexHdf5.cc src/sqliteHelpers.cc src/postselection.cc
-  src/readTable.cc src/jsonToValue.cc)
+  src/parseJson.cc)
 add_executable(queryDb "${CMAKE_SOURCE_DIR}/src/queryDb.cc" src/indexHdf5.cc
-  src/attributes.cc src/h5helpers.cc src/sqliteHelpers.cc src/postselection.cc
-  src/readTable.cc src/jsonToValue.cc)
-add_executable(tests src/tests.cc src/indexHdf5.cc src/attributes.cc
-  src/h5helpers.cc src/sqliteHelpers.cc src/postselection.cc src/readTable.cc
-  src/jsonToValue.cc)
+  src/value.cc src/attributes.cc src/h5helpers.cc src/sqliteHelpers.cc src/postselection.cc
+  src/parseJson.cc)
+add_executable(tests src/tests.cc src/indexHdf5.cc src/value.cc src/attributes.cc
+  src/h5helpers.cc src/sqliteHelpers.cc src/postselection.cc src/parseJson.cc)
 
 macro(use_cxx11)
   if (CMAKE_VERSION VERSION_LESS "3.1")

@@ -1,9 +1,11 @@
+#include <iostream>
 #include "attributes.h"
 #include "indexHdf5.h"
 #include "sqliteHelpers.h"
 #include "h5helpers.h"
 
-#include <iostream>
+using namespace rqcd_hdf5_index;
+
 int main(int argc, char** argv) {
   if( argc != 3 ) { std::cerr << "wrong number of arguments." << std::endl;
                     return -1; }
@@ -13,11 +15,11 @@ int main(int argc, char** argv) {
 
   sqlite3 *db;
   sqlite3_open(sqlfile.c_str(), &db);
-  prepareSqliteFile(db);
+  sqlite_helpers::prepareSqliteFile(db);
 
   Index idx = indexFile(h5file);
 
-  insertDataset(db, idx);
+  sqlite_helpers::insertDataset(db, idx);
 
   sqlite3_close(db);
   

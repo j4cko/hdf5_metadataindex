@@ -1,5 +1,8 @@
 #include "sqliteHelpers.h"
+#include <sstream>
 #include <iostream>
+namespace rqcd_hdf5_index {
+namespace sqlite_helpers {
 static int insertStringCallback(void *idx, int argc, char** argv, char** azColName){
   std::vector<std::string>* vec = (std::vector<std::string>*)idx;
   if( argc != 1 ) { return -1; }
@@ -290,3 +293,5 @@ Index idsToIndex(sqlite3 *db, std::vector<int> locids) {
   for( auto locid : locids ) res.push_back(idsToDatasetSpec(db, locid));
   return res;
 }
+} // sqlite_helpers
+} // rqcd_hdf5_index

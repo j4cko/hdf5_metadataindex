@@ -1,10 +1,9 @@
+#include <iostream>
 #include "attributes.h"
 #include "indexHdf5.h"
-#include "readTable.h"
 #include "postselection.h"
 #include "conditions.h"
 #include "indexHdf5.h"
-#include <iostream>
 int itest = 0;
 #define SIMPLETEST( msg, code, condition ) \
   {\
@@ -29,6 +28,7 @@ int itest = 0;
     return itest;\
   }}
 
+using namespace rqcd_hdf5_index;
 
 int main( int argc, char** argv ) {
   std::string testdatadir(".");
