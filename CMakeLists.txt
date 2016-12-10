@@ -45,7 +45,7 @@ target_link_libraries( readHdf5 sqliteindex hdf5index fileindex ${LIBS} )
 target_link_libraries( queryDb sqliteindex fileindex ${LIBS} )
 target_link_libraries( tests sqliteindex hdf5index fileindex ${LIBS} )
 
-install(TARGETS indexHdf5 queryDb readHdf5
+install(TARGETS indexHdf5 queryDb readHdf5 fileindex hdf5index sqliteindex
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
