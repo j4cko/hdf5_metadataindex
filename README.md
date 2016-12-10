@@ -59,6 +59,7 @@ be one of
   * `FIRST`: only the first matching Dataset is returned
   * `AVERAGE`: an average over all hits is returned
   * `CONCATENATE`: A joined / concatenated vector of all hits is returned. 
+
 The default behaviour is `FIRST`.
 
 ### Evaluation hierarchy ###

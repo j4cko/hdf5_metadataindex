@@ -54,11 +54,29 @@ int main(int argc, char** argv) {
   const std::string dbfile(argv[1]);
   const std::string query(argv[2]);
 
-  Request req = queryToRequest(query);
+  Request req;
+  try {
+    req = queryToRequest(query);
+  } catch (std::exception const & exc ) {
+    std::cerr << "ERROR while parsing request: " << exc.what() << std::endl;
+    return 3;
+  }
 
   sqlite3 *db;
-  sqlite3_open(dbfile.c_str(), &db);
-  auto idx = getMatchingDatasetSpecs(db, req);
+  int rc = sqlite3_open(dbfile.c_str(), &db);
+  if( rc ) {
+    std::cerr << "ERROR opening sqlite file: " << sqlite3_errmsg(db);
+    sqlite3_close(db);
+    return 4;
+  }
+  Index idx;
+  try {
+    idx = getMatchingDatasetSpecs(db, req);
+  } catch( std::exception & exc ) {
+    sqlite3_close(db);
+    std::cerr << "ERROR processing request: " << exc.what() << std::endl;
+    return 5;
+  }
   sqlite3_close(db);
 
   std::vector<std::complex<double>> result;
