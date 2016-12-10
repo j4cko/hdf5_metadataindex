@@ -54,6 +54,13 @@ but all attributes in the request are set and have the right value.
 Requests can be currently be parsed from json. The keywords `attributes`, `file`
 and `luacode` (as soon as implemented) refer to the individual request sections.
 
+Requests can contain an additional specifier `searchmode`, which may currently
+be one of 
+  * `FIRST`: only the first matching Dataset is returned
+  * `AVERAGE`: an average over all hits is returned
+  * `CONCATENATE`: A joined / concatenated vector of all hits is returned. 
+The default behaviour is `FIRST`.
+
 ### Evaluation hierarchy ###
 
 The order in which requests are evaluated is not fixed: This is no problem since

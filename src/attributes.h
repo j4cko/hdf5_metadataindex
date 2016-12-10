@@ -4,6 +4,7 @@
 #include <string>
 #include <stdexcept>
 #include <memory>
+#include <algorithm>
 #include <list>
 #include <ostream>
 #include <cassert>
@@ -90,12 +91,20 @@ struct DatasetSpec {
 };
 
 typedef std::vector<DatasetSpec> Index;
+
+enum class SearchMode {
+  FIRST,
+  AVERAGE,
+  CONCATENATE
+};
+SearchMode searchModeFromString(std::string str);
 struct Request {
   std::vector<AttributeRequest> attrrequests;
   std::vector<Hdf5DatasetRequest> dsetrequests;
   std::vector<FileRequest>      filerequests;
   //TODO later:
   //std::vector<LuaRequest>       luarequests;
+  SearchMode smode = SearchMode::FIRST;
 };
 
 std::list<File> getUniqueFiles(Index const & idx);

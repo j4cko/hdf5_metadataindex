@@ -120,6 +120,8 @@ Request queryToRequest(std::string const & query) {
       }
     } else if ( name == std::string("luacode") ) {
       throw std::runtime_error("lua postprocessing is not yet implemented.");
+    } else if ( name == std::string("searchmode") and root[name].isString() ) {
+      req.smode = searchModeFromString(root["searchmode"].asString());
     } else {
       std::stringstream sstr;
       sstr << "unknown request type: " << name << std::endl;

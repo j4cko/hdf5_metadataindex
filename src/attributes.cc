@@ -84,4 +84,13 @@ Index expandIndex(Index const & idx, std::map<std::string, Value> const & tables
   }
   return res;
 }
+SearchMode searchModeFromString(std::string str) {
+  std::transform(str.begin(), str.end(),str.begin(), ::toupper);
+  if( str == "FIRST" )             return SearchMode::FIRST;
+  else if ( str == "AVERAGE" )     return SearchMode::AVERAGE;
+  else if ( str == "CONCATENATE" ) return SearchMode::CONCATENATE;
+  else
+    throw std::runtime_error("unsupported searchmode! Only FIRST, AVERAGE and "
+                             "CONCATENATE are supported");
+}
 }
