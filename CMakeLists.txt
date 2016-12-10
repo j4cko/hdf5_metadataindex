@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 2.8)
-project (Hdf5MetadataIndex)
+project (rqcd_mdi)
 
 set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
@@ -45,6 +45,9 @@ target_link_libraries( readHdf5 sqliteindex hdf5index fileindex ${LIBS} )
 target_link_libraries( queryDb sqliteindex fileindex ${LIBS} )
 target_link_libraries( tests sqliteindex hdf5index fileindex ${LIBS} )
 
-install(TARGETS indexHdf5 queryDb tests
+install(TARGETS indexHdf5 queryDb readHdf5
         RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib)
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
+install(DIRECTORY src/ DESTINATION include/rqcd_mdi 
+        FILES_MATCHING PATTERN "*.h")

@@ -1,4 +1,4 @@
-# HDF5 Index and Request Processing #
+# RQCD metadata indexing #
 
 ## Motivation ##
 
