@@ -77,7 +77,7 @@ H5ReaderGeneric::read(DatasetSpec const & dsetspec) {
   hid_t mem_space_id  = -1;
   if( ndims == 1 ) {
     // read one-dim:
-    if( dsetspec.location.begin >= 0 ) {
+    if( dsetspec.location.row >= 0 ) {
       H5Sclose(dspace);
       H5Tclose(dtype);
       H5Dclose(dsetid);
@@ -86,12 +86,12 @@ H5ReaderGeneric::read(DatasetSpec const & dsetspec) {
     numberOfDoubles = dims[0];
     file_space_id = H5S_ALL;
   } else if( ndims == 2 ) {
-    if( dsetspec.location.begin < 0 ) {
+    if( dsetspec.location.row < 0 ) {
       // read full dataset, serialize
       numberOfDoubles = dims[0]*dims[1];
       file_space_id   = H5S_ALL;
     //begin cannot be negative, see above. A cast is save:
-    } else if ( (std::size_t)dsetspec.location.begin >= dims[0] ) {
+    } else if ( (std::size_t)dsetspec.location.row >= dims[0] ) {
       H5Sclose(dspace);
       H5Tclose(dtype);
       H5Dclose(dsetid);
@@ -100,7 +100,7 @@ H5ReaderGeneric::read(DatasetSpec const & dsetspec) {
       // read only one column of the dataset:
       numberOfDoubles = dims[1];
       const hsize_t dspacedims[2] = {1u, numberOfDoubles};
-      const hssize_t offsets[2] = {dsetspec.location.begin, 0u};
+      const hssize_t offsets[2] = {dsetspec.location.row, 0u};
       file_space_id   = H5Screate_simple(2,dspacedims,NULL);
       status = H5Soffset_simple(file_space_id, offsets);
       if( status < 0 ) {

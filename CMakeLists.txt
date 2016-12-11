@@ -1,6 +1,11 @@
 cmake_minimum_required (VERSION 2.8)
 project (rqcd_mdi)
 
+# -- handle CEREAL 
+set(CEREAL "other_libs/cereal")
+include_directories(${CEREAL}/include)
+install(DIRECTORY ${CEREAL}/include/cereal DESTINATION include)
+
 set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 add_library( fileindex src/value.cc src/attributes.cc src/postselection.cc src/parseJson.cc )

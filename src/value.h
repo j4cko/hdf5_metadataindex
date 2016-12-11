@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <map>
 #include <vector>
+#include <cereal/archives/json.hpp>
 
 namespace rqcd_file_index {
 enum class Type {
@@ -12,6 +13,13 @@ enum class Type {
   STRING,
   ARRAY
 };
+
+class Value; 
+
+std::string typeToString(Type const & type);
+Type typeFromTypeid(std::type_info const & tinfo);
+Value valueFromString(std::string const & str);
+Type typeFromString(std::string const & typestr);
 
 class Value {
 public:
@@ -323,10 +331,23 @@ private:
   Concept *content;
   Type type;
 };
-
-std::string typeToString(Type const & type);
-Type typeFromTypeid(std::type_info const & tinfo);
-Value valueFromString(std::string const & str);
-Type typeFromString(std::string const & typestr);
 }
+/*namespace cereal
+{
+  template <class Archive> inline
+  std::string save_minimal( Archive const &, rqcd_file_index::Value const & val )
+  {
+    std::stringstream sstr;
+    sstr << val;
+    return sstr.str();
+  }
+
+  template <class Archive> inline
+  void load_minimal( Archive const &, rqcd_file_index::Value & val, std::string const & str)
+  {
+    val = rqcd_file_index::valueFromString(str);
+  }
+}
+*/
 #endif
+

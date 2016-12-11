@@ -22,7 +22,7 @@ std::list<File> getUniqueFiles(Index const & idx) {
 void printIndex(Index const & idx, std::ostream& os) {
   for ( auto const & dataset : idx ) {
     os << "dataset \"" << dataset.datasetname << "\" (from file \""
-      << dataset.file.filename << "\" and row " << dataset.location.begin << ")" <<
+      << dataset.file.filename << "\" and row " << dataset.location.row << ")" <<
       " has the following attributes:" << std::endl;
     for ( auto attr : dataset.attributes ) {
       os << "  - " << attr.getName() 
@@ -63,7 +63,7 @@ Index splitDsetSpecWithTable( DatasetSpec const & dset, Value const & table ) {
     DatasetSpec newdset(dset);
     for( auto && attr : attrs )
       newdset.attributes.push_back(std::move(attr));
-    newdset.location.begin = (int)(req.second["row"].getNumeric());
+    newdset.location.row = (int)(req.second["row"].getNumeric());
     res.push_back(std::move(newdset));
   }
   return res;

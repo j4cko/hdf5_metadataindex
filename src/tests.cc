@@ -112,9 +112,18 @@ int main( int argc, char** argv ) {
   SIMPLETEST( "attribute holds name ", Attribute attr("exampleattr", 5);, attr.getName() == "exampleattr");
   SIMPLETEST( "attribute holds value", Attribute attr("exampleattr", 5);, attr.getValue() == 5);
   SIMPLETEST( "attribute returns type", Attribute attr("exampleattr", 5);, attr.getType() == Type::NUMERIC);
+  std::stringstream sstr;
+  SIMPLETEST( "can write simple attribute to a stream: ",  sstr << Attribute("exampleattr", 5), sstr.str() == "\"exampleattr\": 5");
+  {
+    sstr.str("");
+    std::map<std::string, Value> innermap; innermap.insert({"a", 1}); innermap.insert({"b", 2}); 
+    std::map<std::string, Value> outermap; outermap.insert({"c", 3}); outermap.insert({"map", Value(innermap)}); 
+    SIMPLETEST( "can write complicated attributes to a stream: ", sstr << Attribute("exampleattr", Value(outermap)), 
+        sstr.str() == "\"exampleattr\": {\"c\": 3,\"map\": {\"a\": 1,\"b\": 2}}");
+  }
 
   std::cout << "=================================================" << std::endl;
-  std::cout << "|| Attribute matching & requsts                ||"<< std::endl;
+  std::cout << "|| Attribute matching & requests               ||"<< std::endl;
   std::cout << "=================================================" << std::endl;
   auto attr = Attribute("test", 4);
   auto equals4 = AttributeConditions::Equals(4);
@@ -122,7 +131,14 @@ int main( int argc, char** argv ) {
   SIMPLETEST( "attribute is matched by equals-condition", ,equals4.matches(attr, "test"));
   auto areq = AttributeRequest("test", equals4);
   SIMPLETEST( "attributerequest matches attribute", ,areq.matches(attr));
-
+  {
+  std::cout << "=================================================" << std::endl;
+  std::cout << "|| Serialization of Requests / Attributes      ||"<< std::endl;
+  std::cout << "=================================================" << std::endl;
+  cereal::JSONOutputArchive archive( std::cout );
+  auto attr = Attribute("testattr", 5);
+  archive( attr );
+  }
   
   std::cout << "=================================================" << std::endl;
   std::cout << "|| Read table                                  ||"<< std::endl;

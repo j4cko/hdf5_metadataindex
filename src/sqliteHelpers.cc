@@ -30,7 +30,7 @@ static int dsetspecFileinfoCallback(void *var, int argc, char** argv, char** azC
   for(int i = 0; i < argc; i++) {
     if( std::string(azColName[i]) == "locname" ) dsetspec->datasetname = std::string(argv[i]);
     else if( std::string(azColName[i]) == "fname" ) dsetspec->file.filename = std::string(argv[i]);
-    else if( std::string(azColName[i]) == "row" )   dsetspec->location.begin = std::stoi(std::string(argv[i]));
+    else if( std::string(azColName[i]) == "row" )   dsetspec->location.row = std::stoi(std::string(argv[i]));
     else if( std::string(azColName[i]) == "mtime" ) dsetspec->file.mtime = std::stoi(std::string(argv[i]));
   }
   return 0;
@@ -108,7 +108,7 @@ std::string createFilelocInsertionString( DatasetSpec const & dset ) {
   std::stringstream sstr;
   sstr << 
     "insert into filelocations(locname,row,fileid) values('" << dset.datasetname << 
-    "',"<<dset.location.begin << ",(select fileid from files where fname = '" << dset.file.filename << 
+    "',"<<dset.location.row << ",(select fileid from files where fname = '" << dset.file.filename << 
     "' and mtime = " << dset.file.mtime << "));";
   return sstr.str();
 }
@@ -117,7 +117,7 @@ std::string createAttrValueInsertionString( DatasetSpec const & dset,
   std::stringstream sstr;
   sstr <<
   "insert into attrvalues(attrid,locid,value) values(( select attrid from attributes where attrname=\'" <<
-  attr.getName() << "\'), (select locid from filelocations where locname=\'" << dset.datasetname << "\' and row=" << dset.location.begin << "),";
+  attr.getName() << "\'), (select locid from filelocations where locname=\'" << dset.datasetname << "\' and row=" << dset.location.row << "),";
   if(attr.getType() == Type::STRING or attr.getType() == Type::ARRAY)
     //TODO: need to "escape" single quotes? single quotes are escaped by
     //single quotes..

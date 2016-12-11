@@ -18,6 +18,23 @@ class Attribute {
     Type getType() const { return val.getType(); }
     Value getValue() const { return val; };
     std::string getName() const { return attrname; };
+    friend std::ostream& operator<<(std::ostream& os, Attribute const & attr) {
+      os << "\"" << attr.getName() << "\": " << attr.getValue();
+      return os;
+    }
+  template<typename Archive>
+  void save(Archive& ar) const { 
+    if( val.getType() == Type::NUMERIC )
+      ar(CEREAL_NVP(attrname), CEREAL_NVP(val.getNumeric()));
+    else if (val.getType() == Type::STRING)
+      ar(CEREAL_NVP(attrname), CEREAL_NVP(val.getString()));
+    else
+      throw std::runtime_error("unimplemented");
+  }
+  template<typename Archive>
+  void load(Archive const & ar) {
+    std::cout << "blablbla " << std::endl;
+  }
   private:
     std::string attrname;
     Value val;
@@ -61,6 +78,10 @@ struct File {
   friend bool operator==(File const & a, File const & b) {
     return a.filename == b.filename and a.mtime == b.mtime;
   }
+  friend std::ostream& operator<<(std::ostream& os, File const & f) {
+    os << "{\"filename\": \"" << f.filename << "\", \"mtime\": " << f.mtime << "}";
+    return os;
+  }
 };
 class FileCondition {
   public:
@@ -69,9 +90,13 @@ class FileCondition {
     virtual ~FileCondition() {}
 };
 struct DatasetChunkSpec {
-  DatasetChunkSpec(int const & start) : begin(start) {}
-  DatasetChunkSpec() : begin(-1) {}; //default: read complete dataset.
-  int begin;
+  DatasetChunkSpec(int const & start) : row(start) {}
+  DatasetChunkSpec() : row(-1) {}; //default: read complete dataset.
+  int row;
+  friend std::ostream& operator<<(std::ostream& os, DatasetChunkSpec const & c) {
+    os << "{\"row\": " << c.row << "}";
+    return os;
+  }
 };
 class Hdf5DatasetCondition {
   public:
@@ -88,6 +113,14 @@ struct DatasetSpec {
   std::string datasetname;
   File file;
   DatasetChunkSpec location; // location within the dataset
+  friend std::ostream& operator<<(std::ostream& os, DatasetSpec const & dset) {
+    os << "{\"attributes\": [";
+    for( auto const & attr : dset.attributes )
+      os << attr;
+    os << "], \"datasetname\": \"" << dset.datasetname << "\", \"file\": " 
+       << dset.file << ", \"location\": " << dset.location << "}";
+    return os;
+  }
 };
 
 typedef std::vector<DatasetSpec> Index;
