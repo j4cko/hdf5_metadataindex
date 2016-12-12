@@ -84,9 +84,9 @@ int main(int argc, char** argv) {
   if( req.smode == SearchMode::FIRST ) {
     // read only the first match:
     try {
-      H5ReaderGeneric reader(idx.front().file);
       if( idx.empty() )
         return 0;
+      H5ReaderGeneric reader(idx.front().file);
       result = reader.read(idx.front());
       num_hits++;
     } catch (std::exception const & exc) {
