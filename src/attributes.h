@@ -138,6 +138,7 @@ std::ostream& operator<<(std::ostream& os, Index const & idx);
 
 enum class SearchMode {
   FIRST,
+  ALL,
   AVERAGE,
   CONCATENATE
 };

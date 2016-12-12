@@ -102,7 +102,9 @@ int main(int argc, char** argv) {
       return 1;
     }
   } else if ( req.smode == SearchMode::CONCATENATE or 
+              req.smode == SearchMode::ALL or 
               req.smode == SearchMode::AVERAGE ){
+    //TODO: CONCATENATE and ALL are not really equivalent!
     auto files = getUniqueFiles(indexes[ireq]);
     for( auto file : files ) {
       // process only this file:
@@ -115,7 +117,7 @@ int main(int argc, char** argv) {
         H5ReaderGeneric reader(file);
         for (auto const & dsetspec : idxcp) {
           std::cout << "datasetSpec: " << dsetspec << std::endl;
-          if( req.smode == SearchMode::CONCATENATE )
+          if( req.smode == SearchMode::CONCATENATE or req.smode == SearchMode::ALL)
             concatenate( result, reader.read(dsetspec) );
           else if ( req.smode == SearchMode::AVERAGE )
             elementalAdd( result, reader.read(dsetspec) );

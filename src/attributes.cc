@@ -98,6 +98,7 @@ SearchMode searchModeFromString(std::string str) {
   if( str == "FIRST" )             return SearchMode::FIRST;
   else if ( str == "AVERAGE" )     return SearchMode::AVERAGE;
   else if ( str == "CONCATENATE" ) return SearchMode::CONCATENATE;
+  else if ( str == "ALL" )         return SearchMode::ALL;
   else
     throw std::runtime_error("unsupported searchmode! Only FIRST, AVERAGE and "
                              "CONCATENATE are supported");
