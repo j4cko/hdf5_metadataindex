@@ -13,5 +13,6 @@ AttributeRequest parseAttributeRequest(Json::Value const & root, std::string con
 DatasetSpec parseDsetspec( Json::Value const & root );
 FileRequest parseFileRequest(Json::Value const & root, std::string const & name);
 Request queryToRequest(std::string const & query);
+std::vector<Request> queryToRequestList(std::string const query);
 }
 #endif

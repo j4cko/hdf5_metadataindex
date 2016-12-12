@@ -54,40 +54,48 @@ int main(int argc, char** argv) {
   const std::string dbfile(argv[1]);
   const std::string query(argv[2]);
 
-  Request req;
+  std::vector<Request> reqs;
   try {
-    req = queryToRequest(query);
+    reqs = queryToRequestList(query);
   } catch (std::exception const & exc ) {
     std::cerr << "ERROR while parsing request: " << exc.what() << std::endl;
     return 3;
   }
 
   sqlite3 *db;
+  std::vector<Index> indexes(reqs.size());
   int rc = sqlite3_open(dbfile.c_str(), &db);
   if( rc ) {
     std::cerr << "ERROR opening sqlite file: " << sqlite3_errmsg(db);
     sqlite3_close(db);
     return 4;
   }
-  Index idx;
-  try {
-    idx = getMatchingDatasetSpecs(db, req);
-  } catch( std::exception & exc ) {
-    sqlite3_close(db);
-    std::cerr << "ERROR processing request: " << exc.what() << std::endl;
-    return 5;
+  auto ireq = 0u;
+  for( auto & index : indexes ) {
+    try {
+      index = getMatchingDatasetSpecs(db, reqs[ireq]);
+    } catch( std::exception & exc ) {
+      sqlite3_close(db);
+      std::cerr << "ERROR processing request: " << exc.what() << std::endl;
+      return 5;
+    }
+    ireq++;
   }
   sqlite3_close(db);
+
+  ireq=0;
+  for( auto const & req : reqs ) {
 
   std::vector<std::complex<double>> result;
   std::size_t num_hits = 0;
   if( req.smode == SearchMode::FIRST ) {
     // read only the first match:
     try {
-      if( idx.empty() )
+      if( indexes[ireq].empty() )
         return 0;
-      H5ReaderGeneric reader(idx.front().file);
-      result = reader.read(idx.front());
+      std::cout << "datasetSpec: " << indexes[ireq].front() << std::endl;
+      H5ReaderGeneric reader(indexes[ireq].front().file);
+      result = reader.read(indexes[ireq].front());
       num_hits++;
     } catch (std::exception const & exc) {
       std::cerr << "ERROR while reading file: " << exc.what() << std::endl;
@@ -95,10 +103,10 @@ int main(int argc, char** argv) {
     }
   } else if ( req.smode == SearchMode::CONCATENATE or 
               req.smode == SearchMode::AVERAGE ){
-    auto files = getUniqueFiles(idx);
+    auto files = getUniqueFiles(indexes[ireq]);
     for( auto file : files ) {
       // process only this file:
-      auto idxcp = idx;
+      auto idxcp = indexes[ireq];
       Request onlyThisFileReq;
       onlyThisFileReq.filerequests.push_back(std::unique_ptr<FileCondition>(
             new FileConditions::NameMatches(file.filename)));
@@ -106,6 +114,7 @@ int main(int argc, char** argv) {
       try {
         H5ReaderGeneric reader(file);
         for (auto const & dsetspec : idxcp) {
+          std::cout << "datasetSpec: " << dsetspec << std::endl;
           if( req.smode == SearchMode::CONCATENATE )
             concatenate( result, reader.read(dsetspec) );
           else if ( req.smode == SearchMode::AVERAGE )
@@ -128,6 +137,8 @@ int main(int argc, char** argv) {
   // output:
   for( auto const & number : result ) {
     std::cout << std::real(number) << " " << std::imag(number) << std::endl;
+  }
+  ireq++;
   }
   return 0;
 }

@@ -131,6 +131,25 @@ Request queryToRequest(std::string const & query) {
 
   return req;
 }
+std::vector<Request> queryToRequestList(std::string const query) {
+  std::stringstream sstr;
+  sstr << query;
+  Json::Value root;
+  sstr >> root;
+  std::vector<Request> res;
+
+  if( root.isArray() ) {
+    for( auto i = 0u; i < root.size(); ++i ) {
+      sstr.str(""); sstr.clear();
+      sstr << root[i];
+      res.push_back(queryToRequest(sstr.str()));
+    }
+  } else {
+    // one single request could still be given without [..]:
+    res.push_back(queryToRequest(query));
+  }
+  return res;
+}
 DatasetSpec parseDsetspec( Json::Value const & root ) {
   std::vector<Attribute> attrs;
   if( root.isMember("attributes") ) {
