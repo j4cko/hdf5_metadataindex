@@ -85,6 +85,8 @@ int main(int argc, char** argv) {
     // read only the first match:
     try {
       H5ReaderGeneric reader(idx.front().file);
+      if( idx.empty() )
+        return 0;
       result = reader.read(idx.front());
       num_hits++;
     } catch (std::exception const & exc) {
