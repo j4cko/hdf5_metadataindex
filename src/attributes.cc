@@ -1,4 +1,6 @@
 #include "attributes.h"
+#include "parseJson.h"
+
 namespace rqcd_file_index {
 Attribute attributeFromStrings(std::string const & name, std::string const & valstr, 
         std::string const & typestr) {
@@ -6,6 +8,13 @@ Attribute attributeFromStrings(std::string const & name, std::string const & val
   auto resval = valueFromString(valstr);
   assert(resval.getType() == typespec);
   return Attribute(name, resval);
+}
+DatasetSpec dsetSpecFromString(std::string const & str) {
+  std::stringstream sstr;
+  sstr << str;
+  Json::Value root;
+  sstr >> root;
+  return parseDsetspec(root);
 }
 std::list<File> getUniqueFiles(Index const & idx) {
   std::list<File> res;
@@ -92,5 +101,14 @@ SearchMode searchModeFromString(std::string str) {
   else
     throw std::runtime_error("unsupported searchmode! Only FIRST, AVERAGE and "
                              "CONCATENATE are supported");
+}
+std::ostream& operator<<(std::ostream& os, Index const & idx) {
+  os << "[";
+  for( auto it = idx.cbegin(); it != --(idx.cend()); ++it)
+    os << *it << ", ";
+  if( not idx.empty() )
+    os << idx.back();
+  os << "]";
+  return os;
 }
 }

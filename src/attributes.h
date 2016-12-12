@@ -8,6 +8,7 @@
 #include <list>
 #include <ostream>
 #include <cassert>
+#include <sstream>
 #include "value.h"
 
 namespace rqcd_file_index {
@@ -22,19 +23,9 @@ class Attribute {
       os << "\"" << attr.getName() << "\": " << attr.getValue();
       return os;
     }
-  template<typename Archive>
-  void save(Archive& ar) const { 
-    if( val.getType() == Type::NUMERIC )
-      ar(CEREAL_NVP(attrname), CEREAL_NVP(val.getNumeric()));
-    else if (val.getType() == Type::STRING)
-      ar(CEREAL_NVP(attrname), CEREAL_NVP(val.getString()));
-    else
-      throw std::runtime_error("unimplemented");
-  }
-  template<typename Archive>
-  void load(Archive const & ar) {
-    std::cout << "blablbla " << std::endl;
-  }
+    bool operator==(Attribute const & other) {
+      return (attrname == other.attrname and val == other.val);
+    }
   private:
     std::string attrname;
     Value val;
@@ -82,6 +73,9 @@ struct File {
     os << "{\"filename\": \"" << f.filename << "\", \"mtime\": " << f.mtime << "}";
     return os;
   }
+  bool operator==(File const & other) {
+    return filename == other.filename and mtime == other.mtime;
+  }
 };
 class FileCondition {
   public:
@@ -96,6 +90,9 @@ struct DatasetChunkSpec {
   friend std::ostream& operator<<(std::ostream& os, DatasetChunkSpec const & c) {
     os << "{\"row\": " << c.row << "}";
     return os;
+  }
+  bool operator==(DatasetChunkSpec const & other) {
+    return row == other.row;
   }
 };
 class Hdf5DatasetCondition {
@@ -114,16 +111,30 @@ struct DatasetSpec {
   File file;
   DatasetChunkSpec location; // location within the dataset
   friend std::ostream& operator<<(std::ostream& os, DatasetSpec const & dset) {
-    os << "{\"attributes\": [";
-    for( auto const & attr : dset.attributes )
-      os << attr;
-    os << "], \"datasetname\": \"" << dset.datasetname << "\", \"file\": " 
+    os << "{\"attributes\": {";
+    for( auto it = dset.attributes.cbegin(); it != --(dset.attributes.cend()); ++it)
+      os << *it << ", ";
+    if( not dset.attributes.empty() )
+      os << dset.attributes.back();
+    os << "}, \"datasetname\": \"" << dset.datasetname << "\", \"file\": " 
        << dset.file << ", \"location\": " << dset.location << "}";
     return os;
   }
+  bool operator==(DatasetSpec const & other) {
+    bool equal = (attributes.size() == other.attributes.size());
+    equal &= datasetname == other.datasetname;
+    equal &= location == other.location;
+    equal &= file == other.file;
+    if( not equal ) return false;
+    for( auto i = 0u; i < attributes.size(); ++i )
+      equal &= attributes[i] == other.attributes[i];
+    return equal;
+  }
 };
+DatasetSpec dsetSpecFromString(std::string const & str);
 
 typedef std::vector<DatasetSpec> Index;
+std::ostream& operator<<(std::ostream& os, Index const & idx);
 
 enum class SearchMode {
   FIRST,

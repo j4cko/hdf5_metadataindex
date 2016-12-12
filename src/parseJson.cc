@@ -131,4 +131,37 @@ Request queryToRequest(std::string const & query) {
 
   return req;
 }
+DatasetSpec parseDsetspec( Json::Value const & root ) {
+  std::vector<Attribute> attrs;
+  if( root.isMember("attributes") ) {
+    auto attrNames = root["attributes"].getMemberNames();
+    for( auto const & key : attrNames ) {
+      attrs.push_back(Attribute(key, jsonValueToValue(root["attributes"][key])));
+    }
+  } else {
+    throw std::runtime_error("could not parse dsetspec: no attributes given.");
+  }
+  std::string dsetname;
+  if( root.isMember("datasetname") )
+    dsetname = root["datasetname"].asString();
+  else
+    throw std::runtime_error("could not parse dsetspec: no datasetname given.");
+  std::string fname; int mtime;
+  if( root.isMember("file") ) {
+    if( root["file"].isMember("filename") and root["file"].isMember("mtime") ) {
+      fname = root["file"]["filename"].asString();
+      mtime = root["file"]["mtime"].asInt();
+    } else
+      throw std::runtime_error("could not parse file: insufficient entries.");
+  } else
+    throw std::runtime_error("could not parse dsetspec: no file given.");
+  File file(fname, mtime);
+
+  DatasetChunkSpec loc = DatasetChunkSpec(-1);
+  if( root.isMember("location") and root["location"].isMember("row") )
+    loc = DatasetChunkSpec(root["location"]["row"].asInt());
+  else 
+    throw std::runtime_error("could not parse dsetspec: no location given / insufficient entries.");
+  return DatasetSpec(attrs, dsetname, file, loc);
+}
 }

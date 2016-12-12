@@ -120,6 +120,20 @@ int main( int argc, char** argv ) {
     std::map<std::string, Value> outermap; outermap.insert({"c", 3}); outermap.insert({"map", Value(innermap)}); 
     SIMPLETEST( "can write complicated attributes to a stream: ", sstr << Attribute("exampleattr", Value(outermap)), 
         sstr.str() == "\"exampleattr\": {\"c\": 3,\"map\": {\"a\": 1,\"b\": 2}}");
+    std::vector<Attribute> attrs = {Attribute("exampleattr", Value(outermap)),
+                                    Attribute("one",         Value(1)),
+                                    Attribute("two",         Value(2))};
+    DatasetSpec dsetspec(attrs, "exampleDset", 
+        File("/some/path/to/a/file.h5", 1400000), DatasetChunkSpec(-1));
+    DatasetSpec otherdsetspec({Attribute("only", "string")}, "otherexampleDset", 
+        File("/some/path/to/a/otherfile.h5", 1400001), DatasetChunkSpec(-1));
+
+    std::string dsetspecstring = "{\"attributes\": {\"exampleattr\": {\"c\": 3,\"map\": {\"a\": 1,\"b\": 2}}, \"one\": 1, \"two\": 2}, \"datasetname\": \"exampleDset\", \"file\": {\"filename\": \"/some/path/to/a/file.h5\", \"mtime\": 1400000}, \"location\": {\"row\": -1}}";
+    SIMPLETEST( "can read dsetspec: ", DatasetSpec dset(dsetSpecFromString(dsetspecstring)), dset == dsetspec );
+    /* could make test out of this: 
+     * Index idx = {dsetspec, otherdsetspec};
+     * std::cout << idx << std::endl;
+     */
   }
 
   std::cout << "=================================================" << std::endl;
@@ -131,14 +145,7 @@ int main( int argc, char** argv ) {
   SIMPLETEST( "attribute is matched by equals-condition", ,equals4.matches(attr, "test"));
   auto areq = AttributeRequest("test", equals4);
   SIMPLETEST( "attributerequest matches attribute", ,areq.matches(attr));
-  {
-  std::cout << "=================================================" << std::endl;
-  std::cout << "|| Serialization of Requests / Attributes      ||"<< std::endl;
-  std::cout << "=================================================" << std::endl;
-  cereal::JSONOutputArchive archive( std::cout );
-  auto attr = Attribute("testattr", 5);
-  archive( attr );
-  }
+  
   
   std::cout << "=================================================" << std::endl;
   std::cout << "|| Read table                                  ||"<< std::endl;

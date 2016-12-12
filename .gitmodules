@@ -1,4 +1,0 @@
-[submodule "cereal"]
-	path = other_libs/cereal
-	url = https://github.com/USCiLab/cereal.git
-	branch = master
