@@ -129,7 +129,7 @@ int main( int argc, char** argv ) {
         File("/some/path/to/a/otherfile.h5", 1400001), DatasetChunkSpec(-1));
 
     std::string dsetspecstring = "{\"attributes\": {\"exampleattr\": {\"c\": 3,\"map\": {\"a\": 1,\"b\": 2}}, \"one\": 1, \"two\": 2}, \"datasetname\": \"exampleDset\", \"file\": {\"filename\": \"/some/path/to/a/file.h5\", \"mtime\": 1400000}, \"location\": {\"row\": -1}}";
-    SIMPLETEST( "can read dsetspec: ", DatasetSpec dset(dsetSpecFromString(dsetspecstring)), dset == dsetspec );
+    SIMPLETEST( "can write and read back in dsetspec: ", DatasetSpec dset(dsetSpecFromString(dsetspecstring)), dset == dsetspec );
     /* could make test out of this: 
      * Index idx = {dsetspec, otherdsetspec};
      * std::cout << idx << std::endl;
