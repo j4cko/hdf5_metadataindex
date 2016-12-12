@@ -14,12 +14,13 @@ build-job:
     artifacts:
         paths:
           - install/
+          - tests
 
 test-job:
     stage: test
     script:
       - yum -y install sqlite-devel jsoncpp-devel
-      - ldd ./install/bin/tests
-      - ./install/bin/tests ./testdata
+      - ldd ./tests
+      - ./tests ./testdata
     dependencies:
         - build-job
