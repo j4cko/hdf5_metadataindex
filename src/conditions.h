@@ -230,6 +230,7 @@ namespace Hdf5DatasetConditions {
       explicit NameMatches(std::string const & regex_) : regex(std::regex(regex_)) {}
       explicit NameMatches(std::regex const & regex_) : regex(regex_) {}
       bool matches(std::string datasetname, DatasetChunkSpec loc) const {
+        loc.row += 0; // just to avoid -Wunused_variable
         return std::regex_match(datasetname, regex);
       }
       std::unique_ptr<Hdf5DatasetCondition> clone() const {
