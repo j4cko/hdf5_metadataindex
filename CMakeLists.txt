@@ -4,11 +4,11 @@ project (rqcd_mdi)
 set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 add_library( fileindex src/value.cc src/attributes.cc src/postselection.cc src/parseJson.cc )
-add_library( hdf5index src/h5helpers.cc src/indexHdf5.cc )
+add_library( hdf5index src/h5helpers.cc src/indexHdf5.cc src/hdf5ReaderGeneric.cc )
 add_library( sqliteindex src/sqliteHelpers.cc )
 
 add_executable(indexHdf5 src/indexer.cc)
-add_executable(readHdf5 src/readHdf5.cc src/hdf5ReaderGeneric.cc )
+add_executable(readHdf5 src/readHdf5.cc )
 add_executable(queryDb src/queryDb.cc )
 add_executable(tests src/tests.cc )
 
