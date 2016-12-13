@@ -14,7 +14,7 @@ self-describing. This project aims at being a hdf5 reader for *all* hdf5 files
 that are suffiently well described by attributes.
 
 To achieve these two goals, every group / dataset is visited exactly once:
-To build an index of the file, i.e. dataset attributes are extracted and
+To build an index of the file dataset attributes are extracted and
 possibly saved to a database. After this stage, the file contents are known and
 can be searched efficiently.
 After indexing, a request can be processed in constant time and returns a full path
@@ -39,7 +39,7 @@ dataset which has a attribute "CLASS" holding the value "TABLE"), all datasets
 in the same group (usually, there should be just one) are split into all 
 positions described by the table.
 
-These leads to a usually unique description of each dataset in an hdf5 file by
+These usually leads to an unique description of each dataset in an hdf5 file by
 its attributes. In addition, also their path within the hdf5 file is collected,
 which is always unique.
 
@@ -174,7 +174,7 @@ because the preselector does not match (t is 5 and not 2).
 
 Builds using cmake and out-of-source builds are recommended:
 ```
-mkdir build
+mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=<installdir> ..
 make install
 ```
