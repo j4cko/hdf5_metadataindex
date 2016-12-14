@@ -39,7 +39,7 @@
 INCLUDE (FindPackageHandleStandardArgs)
 
 FIND_PATH (JSONCPP_ROOT_DIR
-  NAMES json/json.h include/json/json.h 
+  NAMES json/json.h include/json/json.h include/jsoncpp/json/json.h
   PATHS ENV JSONCPP_ROOT_DIR
   DOC "jsoncpp root directory")
 
@@ -47,7 +47,7 @@ FIND_PATH (JSONCPP_ROOT_DIR
 FIND_PATH (JSONCPP_INCLUDE_DIR
   NAMES json/json.h
   HINTS ${JSONCPP_ROOT_DIR}
-  PATH_SUFFIXES include
+  PATH_SUFFIXES include include/jsoncpp
   DOC "jsoncpp include directory")
 
 FIND_LIBRARY (JSONCPP_LIBRARY_RELEASE
