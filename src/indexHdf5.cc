@@ -22,18 +22,18 @@ Value readArray( hid_t type, std::size_t idx, void const * buf, std::size_t cons
   if( ndims != 1 ) throw std::runtime_error("not implemented / not tested for multidim arrays!");
   for( auto idim = 0; idim < ndims; ++idim ) {
     if( H5Tget_class( super ) == H5T_INTEGER ) {
-      for( auto idx = 0u; idx < dims[idim]; ++idx ) {
-        sstr.str(""); sstr.clear(); sstr << idx;
-        arrmap.insert({sstr.str(), Value( (double)((int*)buf)[idx] )});
+      for( auto i = 0u; i < dims[idim]; ++i ) {
+        sstr.str(""); sstr.clear(); sstr << i;
+        arrmap.insert({sstr.str(), Value( (double)((int*)buf)[i] )});
       }
       if( size != sizeof(int)*dims[idim] ) {
         delete[] dims;
         throw std::runtime_error("invalid read size.");
       }
     } else if ( H5Tget_class( super ) == H5T_FLOAT ) {
-      for( auto idx = 0u; idx < dims[idim]; ++idx ) {
-        sstr.str(""); sstr.clear(); sstr << idx;
-        arrmap.insert({sstr.str(), Value( ((double*)buf)[idx] )});
+      for( auto i = 0u; i < dims[idim]; ++i ) {
+        sstr.str(""); sstr.clear(); sstr << i;
+        arrmap.insert({sstr.str(), Value( ((double*)buf)[i] )});
       }
       if( size != sizeof(double)*dims[idim] ){
         delete[] dims;

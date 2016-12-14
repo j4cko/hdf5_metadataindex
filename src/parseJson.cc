@@ -100,10 +100,12 @@ FileRequest parseFileRequest(Json::Value const & root, std::string const & name)
 }
 Request queryToRequest(std::string const & query) {
   Request req;
+  Json::Value root;
+  {
   std::stringstream sstr;
   sstr << query;
-  Json::Value root;
   sstr >> root;
+  }
   auto names = root.getMemberNames();
   for( auto name : names ) {
     if( name == std::string("attributes") ) {
