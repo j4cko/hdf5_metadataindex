@@ -1,3 +1,7 @@
+/* 
+ * Copyright (c) 2016 by Jakob Simeth
+ * Licensed under MIT License. See LICENSE in the root directory.
+ */
 #include <sstream>
 #include "parseJson.h"
 namespace rqcd_file_index {

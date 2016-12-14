@@ -1,3 +1,7 @@
+/* 
+ * Copyright (c) 2016 by Jakob Simeth
+ * Licensed under MIT License. See LICENSE in the root directory.
+ */
 #ifndef __INDEX_HDF5_H__
 #define __INDEX_HDF5_H__
 #include "attributes.h"

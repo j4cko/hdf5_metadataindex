@@ -1,3 +1,7 @@
+/* 
+ * Copyright (c) 2016 by Jakob Simeth
+ * Licensed under MIT License. See LICENSE in the root directory.
+ */
 #ifndef __ATTRIBUTES_H__
 #define __ATTRIBUTES_H__
 #include <vector>

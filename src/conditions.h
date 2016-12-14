@@ -1,3 +1,7 @@
+/* 
+ * Copyright (c) 2016 by Jakob Simeth
+ * Licensed under MIT License. See LICENSE in the root directory.
+ */
 #ifndef __CONDITIONS_H__
 #define __CONDITIONS_H__
 #include <string>

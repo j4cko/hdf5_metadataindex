@@ -1,3 +1,7 @@
+/* 
+ * Copyright (c) 2016 by Jakob Simeth
+ * Licensed under MIT License. See LICENSE in the root directory.
+ */
 #include "hdf5ReaderGeneric.h"
 namespace rqcd_hdf5_reader_generic {
 H5ReaderGeneric::H5ReaderGeneric(File const & file) : H5ReaderGeneric(file.filename) {

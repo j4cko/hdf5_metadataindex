@@ -1,3 +1,7 @@
+/* 
+ * Copyright (c) 2016 by Jakob Simeth
+ * Licensed under MIT License. See LICENSE in the root directory.
+ */
 #ifndef __HDF5READERGENERIC_H__
 #define __HDF5READERGENERIC_H__
 #include "hdf5.h"

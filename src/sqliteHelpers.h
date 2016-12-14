@@ -1,3 +1,7 @@
+/* 
+ * Copyright (c) 2016 by Jakob Simeth
+ * Licensed under MIT License. See LICENSE in the root directory.
+ */
 #ifndef __SQLITEHELPERS_H__
 #define __SQLITEHELPERS_H__
 #include <sqlite3.h>
