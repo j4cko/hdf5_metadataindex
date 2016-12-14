@@ -73,21 +73,21 @@ void prepareSqliteFile(sqlite3 *db) {
    */
   char *zErrMsg = nullptr;
   std::string request(
-      "create table attributes("
+      "create table if not exists attributes("
         "attrid integer primary key asc,"
         "attrname text unique,"
         "type   text);"
-      "create table filelocations("
+      "create table if not exists filelocations("
         "locid  integer primary key asc,"
         "locname text,"
         "row integer,"
         "fileid integer);"
-      "create table attrvalues("
+      "create table if not exists attrvalues("
         "valueid  integer primary key asc,"
         "attrid int,"
         "locid  int,"
         "value  blob);"
-      "create table files("
+      "create table if not exists files("
         "fileid integer primary key asc,"
         "fname text,"
         "mtime int);" );
