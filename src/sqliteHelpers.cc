@@ -4,6 +4,7 @@
  */
 #include "sqliteHelpers.h"
 #include <sstream>
+#include <set>
 #include <iostream>
 namespace rqcd_file_index {
 namespace sqlite_helpers {
@@ -73,6 +74,10 @@ void prepareSqliteFile(sqlite3 *db) {
    */
   char *zErrMsg = nullptr;
   std::string request(
+      "create table if not exists files("
+        "fileid integer primary key asc,"
+        "fname text unique,"
+        "mtime int);" 
       "create table if not exists attributes("
         "attrid integer primary key asc,"
         "attrname text unique,"
@@ -81,16 +86,15 @@ void prepareSqliteFile(sqlite3 *db) {
         "locid  integer primary key asc,"
         "locname text,"
         "row integer,"
-        "fileid integer);"
+        "fileid integer references files(fileid));"
       "create table if not exists attrvalues("
         "valueid  integer primary key asc,"
-        "attrid int,"
-        "locid  int,"
+        "attrid int references attributes(attrid),"
         "value  blob);"
-      "create table if not exists files("
-        "fileid integer primary key asc,"
-        "fname text,"
-        "mtime int);" );
+      "create table if not exists locattrjunction("
+        "attrvalid integer references attrvalues(valueid),"
+        "locid integer references filelocations(locid));");
+
   int rc = sqlite3_exec( db,
       request.c_str(),
       printCallback, 0, &zErrMsg );
@@ -100,6 +104,7 @@ void prepareSqliteFile(sqlite3 *db) {
     throw std::runtime_error(errstr.str());
   } else { std::cout << "database created." << std::endl;}
 }
+/*
 std::string createAttributesInsertionString( Attribute const & attr) {
   std::stringstream sstr;
   // TODO: should find another sol than ignore..
@@ -111,23 +116,76 @@ std::string createAttributesInsertionString( Attribute const & attr) {
 std::string createFilelocInsertionString( DatasetSpec const & dset ) {
   std::stringstream sstr;
   sstr << 
-    "insert into filelocations(locname,row,fileid) values('" << dset.datasetname << 
+    "insert or ignore into filelocations(locname,row,fileid) values('" << dset.datasetname << 
     "',"<<dset.location.row << ",(select fileid from files where fname = '" << dset.file.filename << 
     "' and mtime = " << dset.file.mtime << "));";
   return sstr.str();
 }
 std::string createAttrValueInsertionString( DatasetSpec const & dset, 
                                             Attribute const & attr ) {
+  std::cout << "inserting \"" << dset.datasetname << "\"..." << std::endl;
   std::stringstream sstr;
   sstr <<
-  "insert into attrvalues(attrid,locid,value) values(( select attrid from attributes where attrname=\'" <<
-  attr.getName() << "\'), (select locid from filelocations where locname=\'" << dset.datasetname << "\' and row=" << dset.location.row << "),";
+  "insert or ignore into attrvalues(attrid,value) values(( select attrid from attributes where attrname=\'" <<
+  attr.getName() << "\'), ";
   if(attr.getType() == Type::STRING or attr.getType() == Type::ARRAY)
     //TODO: need to "escape" single quotes? single quotes are escaped by
     //single quotes..
-    sstr << "\'" << attr.getValue() << "\');";
+    sstr << "'" << attr.getValue() << "');";
   else
     sstr << attr.getValue() << ");";
+  return sstr.str();
+}*/
+std::string createFilelocInsertionString( 
+    std::tuple<std::string, std::string, int> const & fileloc ) {
+  std::stringstream sstr;
+  sstr << 
+    "insert or ignore into filelocations(locname,row,fileid) values('" << 
+      std::get<1>(fileloc) << //locname
+      "'," << std::get<2>(fileloc) << ",(select fileid from files where fname = '" 
+      << std::get<0>(fileloc) <<  //filename
+    "'));";
+  return sstr.str();
+}
+std::string createAttributesInsertionString( std::pair<std::string, std::string> const & attr ) {
+  std::stringstream sstr;
+  sstr << 
+    "insert or ignore into attributes(attrname,type) values('" <<
+    attr.first << "', '" << attr.second << "');";
+  return sstr.str();
+}
+std::string createAttributeValuesInsertionString( 
+    std::tuple<std::string, std::string, std::string> const & attrval ) {
+  std::stringstream sstr;
+  sstr << 
+    "insert or ignore into attrvalues(attrid, value) values(" <<
+    "(select attrid from attributes where attrname = '" << std::get<0>(attrval) <<
+    "' and type = '" <<  std::get<1>(attrval) << "'), ";
+    if( std::get<1>(attrval) == "array" or std::get<1>(attrval) == "string") {
+      sstr << "'" << std::get<2>(attrval) << "');";
+    } else {
+      sstr << std::get<2>(attrval) << ");";
+    }
+  return sstr.str();
+}
+std::string createJunctionInsertionString(
+  std::pair<std::tuple<std::string, std::string, int>, std::tuple<std::string, std::string, std::string>> const & junc ) {
+  std::stringstream sstr;
+
+  sstr <<
+    "insert into locattrjunction(attrvalid, locid) values(( "
+    "select valueid from attrvalues where attrid = ( "
+    "select attrid from attributes where attrname = '"
+    << std::get<0>(junc.second) << "' and type = '" << std::get<1>(junc.second) << "') and value = ";
+  if( std::get<1>(junc.second) == "string" or std::get<1>(junc.second) == "array" ) {
+    sstr << "'" << std::get<2>(junc.second) << "'";
+  } else {
+    sstr << std::get<2>(junc.second);
+  }
+  sstr << "), (select locid from filelocations where locname = '" 
+       << std::get<1>(junc.first) << "' and row = " << std::get<2>(junc.first) 
+       << " and fileid = ( select fileid from files where fname = '" 
+       << std::get<0>(junc.first) << "')));";
   return sstr.str();
 }
 void insertDataset(sqlite3 *db, Index const & idx ) {
@@ -136,8 +194,8 @@ void insertDataset(sqlite3 *db, Index const & idx ) {
   //insert all files:
   auto filelist = getUniqueFiles(idx);
   for( auto file : filelist )
-    sstr << "insert into files(fname, mtime) values(\"" << file.filename << "\", "
-                                                        << file.mtime << ");";
+    sstr << "insert or replace into files(fname, mtime) values(\"" 
+      << file.filename << "\", " << file.mtime << ");";
   int rc = sqlite3_exec( db,
       sstr.str().c_str(), printCallback, 0, &zErrMsg );
   if( rc != SQLITE_OK ) {
@@ -148,32 +206,52 @@ void insertDataset(sqlite3 *db, Index const & idx ) {
   sstr.clear(); sstr.str("");
   
   //insert attributes and filelocations:
-  sstr << "begin transaction;";
-  for( auto dset : idx ){
-    sstr << createFilelocInsertionString(dset);
-    for( auto const & attr : dset.attributes )
+  // pre-compile a unique list of insertions:
+  {
+    std::set<std::pair<std::string, std::string>> attributes; //attribute name, type
+    std::set<std::tuple<std::string, std::string, std::string>> attrvalues; //attribute name, type, value
+    std::set<std::tuple<std::string, std::string, int>> filelocations; //file, dsetname, row
+    // this seems to be a rather complicated construct, but is just a pair of
+    // the filelocation and the attrvalue:
+    std::set<std::pair<std::tuple<std::string, std::string, int>, std::tuple<std::string, std::string, std::string>>> junctions;
+    std::stringstream valsstr;
+    for( auto const & dset : idx ) {
+      filelocations.insert(std::make_tuple(dset.file.filename, dset.datasetname, dset.location.row));
+      for( auto const & attr : dset.attributes ) {
+        valsstr.clear(); valsstr.str("");
+        valsstr << attr.getValue();
+        attributes.insert(std::make_pair(attr.getName(), typeToString(attr.getType())));
+        attrvalues.insert(std::make_tuple(attr.getName(), typeToString(attr.getType()), valsstr.str()));
+        junctions.insert(std::make_pair(
+          std::make_tuple(dset.file.filename, dset.datasetname, dset.location.row),
+          std::make_tuple(attr.getName(), typeToString(attr.getType()), valsstr.str())));
+      }
+    }
+    sstr << "begin transaction;";
+    for( auto const & fileloc : filelocations ){
+      sstr << createFilelocInsertionString(fileloc);
+    }
+    sstr << "commit transaction; begin transaction;";
+    for( auto const & attr : attributes ){
       sstr << createAttributesInsertionString(attr);
+    }
+    sstr << "commit transaction; begin transaction;";
+    for( auto const & attr : attrvalues ){
+      sstr << createAttributeValuesInsertionString(attr);
+    }
+    sstr << "commit transaction; begin transaction;";
+  //TODO: fileattrjunction
+    for( auto const & junc : junctions ) {
+      sstr << createJunctionInsertionString(junc);
+    }
+    sstr << "commit transaction;";
   }
-  sstr << "commit transaction;";
+  
   rc = sqlite3_exec( db,
       sstr.str().c_str(), printCallback, 0, &zErrMsg );
   if( rc != SQLITE_OK ) {
     std::stringstream errstr;
-    errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << sstr.str();
-    throw std::runtime_error(errstr.str());
-  }
-  //connect attributes with locations:
-  sstr.clear(); sstr.str("");
-  sstr << "begin transaction;";
-  for( auto const & dset : idx )
-    for( auto const & attr : dset.attributes )
-      sstr << createAttrValueInsertionString( dset, attr );
-  sstr << "commit transaction;";
-  rc = sqlite3_exec( db,
-      sstr.str().c_str(), printCallback, 0, &zErrMsg );
-  if( rc != SQLITE_OK ) {
-    std::stringstream errstr;
-    errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << sstr.str();
+    errstr << "SQL error: " << zErrMsg << "\nfailed request was: ";// << sstr.str();
     throw std::runtime_error(errstr.str());
   }
 }
@@ -193,15 +271,16 @@ std::vector<int> getLocIdsMatchingPreSelection(sqlite3 *db, Request const & req)
     //build sql query:
     std::stringstream sstr;
     sstr << "select locid from filelocations where locid in ";
-    for( auto i = 0u; i < req.attrrequests.size(); ++i ){
-      sstr << "(select locid from attrvalues where " << 
-        req.attrrequests[i].getSqlValueDescription("value") << 
-        " and attrid=(select attrid from attributes where " << 
-        req.attrrequests[i].getSqlKeyDescription("attrname") << "))";
+    for( auto i = 0u; i < req.attrrequests.size(); ++i ) {
+      sstr << "(select locid from locattrjunction where "
+        "attrvalid = (select valueid from attrvalues where "
+        << req.attrrequests[i].getSqlValueDescription("value") 
+        << " and attrid = (select attrid from attributes where " 
+        << req.attrrequests[i].getSqlKeyDescription("attrname") << ")))";
       if( i < req.attrrequests.size() - 1 ) sstr << " and locid in ";
-    }
-    sstr << ";";
-    query = sstr.str();
+  }
+  sstr << ";";
+  query = sstr.str();
   }
   char *zErrMsg = nullptr;
   int rc = sqlite3_exec( db,
@@ -270,7 +349,7 @@ DatasetSpec idsToDatasetSpec(sqlite3 *db, int locid) {
   std::stringstream sstr;
   // first get the locname (datasetname)
   // select locname,fname,mtime from (select * from filelocations inner join files on filelocations.fileid = files.fileid);
-  sstr << "select locname,row,fname,mtime from (select * from filelocations inner join files on filelocations.fileid = files.fileid) where locid=\"" << locid << "\";";
+  sstr << "select locname,row,fname,mtime from (select * from filelocations inner join files on filelocations.fileid = files.fileid) where locid=" << locid << ";";
   char *zErrMsg = nullptr;
   int rc = sqlite3_exec( db, 
       sstr.str().c_str(), dsetspecFileinfoCallback, &res, &zErrMsg );
@@ -281,7 +360,7 @@ DatasetSpec idsToDatasetSpec(sqlite3 *db, int locid) {
   }
   // then get the attributes:
   sstr.clear(); sstr.str("");
-  sstr << "select attrname,value,type from (select * from attributes inner join attrvalues on attributes.attrid = attrvalues.attrid) where locid=\"" << locid << "\";";
+  sstr << "select attrname,value,type from (select * from attributes inner join attrvalues on attributes.attrid = attrvalues.attrid) where valueid in (select attrvalid from locattrjunction where locid = " << locid << ");";
   rc = sqlite3_exec( db, 
       sstr.str().c_str(), insertAttributeCallback, &(res.attributes), &zErrMsg );
   if( rc != SQLITE_OK ) {
