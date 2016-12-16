@@ -173,7 +173,7 @@ std::string createJunctionInsertionString(
   std::stringstream sstr;
 
   sstr <<
-    "insert into locattrjunction(attrvalid, locid) values(( "
+    "insert or ignore into locattrjunction(attrvalid, locid) values(( "
     "select valueid from attrvalues where attrid = ( "
     "select attrid from attributes where attrname = '"
     << std::get<0>(junc.second) << "' and type = '" << std::get<1>(junc.second) << "') and value = ";
@@ -193,9 +193,12 @@ void insertDataset(sqlite3 *db, Index const & idx ) {
   std::stringstream sstr;
   //insert all files:
   auto filelist = getUniqueFiles(idx);
-  for( auto file : filelist )
-    sstr << "insert or replace into files(fname, mtime) values(\"" 
-      << file.filename << "\", " << file.mtime << ");";
+  for( auto file : filelist ){
+    /*sstr << "insert or replace into files(fname, mtime) values('" 
+      << file.filename << "', " << file.mtime << ");";
+      */
+    sstr << "insert into files(fname, mtime) select '" << file.filename << "', " << file.mtime << " where not exists (select 1 from files where fname = '" << file.filename << "');";
+  }
   int rc = sqlite3_exec( db,
       sstr.str().c_str(), printCallback, 0, &zErrMsg );
   if( rc != SQLITE_OK ) {
