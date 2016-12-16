@@ -10,8 +10,23 @@
 
 using namespace rqcd_file_index;
 
-void help() {
-  std::cout << "TODO: give help / usage." << std::endl;
+void version(int argc, char** argv) {
+  std::cerr << "TODO: take version info from cmake" << std::endl;
+}
+void help(int argc, char** argv) {
+  std::cout << argv[0] << " [subcommand] [arguments]" << std::endl;
+  std::cout << "\n" <<
+    "available subcommands:" << std::endl <<
+    "  create <idxfile> <hdf5 file>  indexes hdf5 file" << std::endl <<
+    "  update <idxfile> <hdf5 file>  updates hdf5 file in the index" << std::endl <<
+    "  rm <idxfile> <hdf5 file>      removes hdf5 file from index" << std::endl <<
+    "  files <idxfile>               lists file contained in index" << std::endl <<
+    "  attributes <idxfile>          lists attributes in index" << std::endl <<
+    "  get <idxfile> <query>         outputs all data matching the query" << std::endl <<
+    "  query <idxfile> <query>       shows all hits matching the query" << std::endl <<
+    "                                (without reading from the hdf5 file)" << std::endl <<
+    "  help                          outputs this help" << std::endl <<
+    "  version                       outputs version information" << std::endl;
 }
 int removeFile(int argc, char** argv) {
   if( argc != 4 ) {
@@ -96,7 +111,7 @@ int main(int argc, char** argv) {
 
   if( argc < 2 ) {
     std::cerr << "no command given." << std::endl;
-    help();
+    help(argc, argv);
     return 1;
   }
 
@@ -108,9 +123,15 @@ int main(int argc, char** argv) {
     return removeFile(argc, argv);
   } else if ( command == "update" ) {
     return updateFile(argc, argv);
+  } else if ( command == "help" ) {
+    help(argc, argv);
+    return 0;
+  } else if ( command == "version" ) {
+    version(argc, argv);
+    return 0;
   } else {
     std::cerr << "unknown command." << std::endl;
-    help();
+    help(argc, argv);
     return 1;
   }
 
