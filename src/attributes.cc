@@ -3,6 +3,7 @@
  * Licensed under MIT License. See LICENSE in the root directory.
  */
 #include "attributes.h"
+#include "filehelpers.h"
 #include "parseJson.h"
 
 namespace rqcd_file_index {
@@ -115,5 +116,10 @@ std::ostream& operator<<(std::ostream& os, Index const & idx) {
     os << idx.back();
   os << "]";
   return os;
+}
+File::File(std::string const & name) : filename(name) {
+  if( not FileHelpers::file_exists(name) )
+    throw std::runtime_error("file does not exist.");
+  mtime = FileHelpers::getFileModificationTime(name);
 }
 }

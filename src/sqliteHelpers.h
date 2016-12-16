@@ -11,6 +11,7 @@
 namespace rqcd_file_index {
 namespace sqlite_helpers {
 void prepareSqliteFile(sqlite3 * db);
+void removeFile(sqlite3 *db, File const & file);
 void insertDataset(sqlite3 *db, Index const & idx);
 DatasetSpec idsToDatasetSpec(sqlite3 *db, int locid);
 std::vector<std::string> idsToDsetnames(sqlite3 *db, std::vector<int> const & locids);

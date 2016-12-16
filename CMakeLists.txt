@@ -3,11 +3,11 @@ project (rqcd_mdi)
 
 set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
-add_library( fileindex src/value.cc src/attributes.cc src/postselection.cc src/parseJson.cc )
-add_library( hdf5index src/h5helpers.cc src/indexHdf5.cc src/hdf5ReaderGeneric.cc )
+add_library( fileindex src/filehelpers.cc src/value.cc src/attributes.cc src/postselection.cc src/parseJson.cc )
+add_library( hdf5index src/filehelpers.cc src/h5helpers.cc src/indexHdf5.cc src/hdf5ReaderGeneric.cc )
 add_library( sqliteindex src/sqliteHelpers.cc )
 
-add_executable(indexHdf5 src/indexer.cc)
+add_executable(mdi src/mdi.cc)
 add_executable(readHdf5 src/readHdf5.cc )
 add_executable(queryDb src/queryDb.cc )
 add_executable(tests src/tests.cc )
@@ -40,12 +40,12 @@ find_package (SQLite3 REQUIRED)
 include_directories(${SQLITE3_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${SQLITE3_LIBRARIES})
 
-target_link_libraries( indexHdf5 sqliteindex hdf5index fileindex ${LIBS} )
+target_link_libraries( mdi sqliteindex hdf5index fileindex ${LIBS} )
 target_link_libraries( readHdf5 sqliteindex hdf5index fileindex ${LIBS} )
 target_link_libraries( queryDb sqliteindex fileindex ${LIBS} )
 target_link_libraries( tests sqliteindex hdf5index fileindex ${LIBS} )
 
-install(TARGETS indexHdf5 queryDb readHdf5 fileindex hdf5index sqliteindex
+install(TARGETS mdi queryDb readHdf5 fileindex hdf5index sqliteindex
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)

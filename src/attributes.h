@@ -68,6 +68,7 @@ class AttributeRequest {
 };
 struct File {
   File(std::string const & name, int time) : filename(name), mtime(time) {}
+  explicit File(std::string const & name);
   std::string filename;
   int mtime;
   friend bool operator==(File const & a, File const & b) {
@@ -109,7 +110,7 @@ typedef std::unique_ptr<FileCondition> FileRequest;
 typedef std::unique_ptr<Hdf5DatasetCondition> Hdf5DatasetRequest;
 struct DatasetSpec {
   DatasetSpec(std::vector<Attribute> const & attr, std::string const & dsetname, File const & file_, DatasetChunkSpec const & loc) : attributes(attr), datasetname(dsetname), file(file_), location(loc) {};
-  DatasetSpec() : attributes(), datasetname(""), file({"", 0}), location() {};
+  DatasetSpec() : attributes(), datasetname(""), file("", 0), location() {};
   std::vector<Attribute> attributes;
   std::string datasetname;
   File file;

@@ -176,6 +176,34 @@ std::string createJunctionInsertionString(
   sstr << ")));";
   return sstr.str();
 }
+void removeFile(sqlite3 *db, File const & file) {
+  // removes file from database, i.e. removes all filelocations and
+  // locattrjunctions and files pointing to this file. doesn't remove attributes
+  // and attrvalues because these might potentially be used from other files.
+  std::stringstream sstr;
+  sstr << "begin transaction;"; 
+  // delete locattrjunctions:
+  sstr << "delete from locattrjunction where locid in "
+    "(select locid from filelocations where fileid = "
+       "(select fileid from files where fname = '" << file.filename << "' and "
+       "mtime = " << file.mtime << "));";
+  // delete filelocations:
+  sstr << "delete from filelocations where fileid = "
+       "(select fileid from files where fname = '" << file.filename << "' and "
+       "mtime = " << file.mtime << ");";
+  // delete file itself:
+  sstr << "delete from files where fname = '"  << file.filename << "' and "
+       "mtime = " << file.mtime << ";";
+  sstr << "commit transaction;";
+  char *zErrMsg = nullptr;
+  int rc = sqlite3_exec( db,
+      sstr.str().c_str(), printCallback, 0, &zErrMsg );
+  if( rc != SQLITE_OK ) {
+    std::stringstream errstr;
+    errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << sstr.str();
+    throw std::runtime_error(errstr.str());
+  }
+}
 void insertDataset(sqlite3 *db, Index const & idx ) {
   char *zErrMsg = nullptr;
   std::stringstream sstr;
@@ -242,7 +270,7 @@ void insertDataset(sqlite3 *db, Index const & idx ) {
       sstr.str().c_str(), printCallback, 0, &zErrMsg );
   if( rc != SQLITE_OK ) {
     std::stringstream errstr;
-    errstr << "SQL error: " << zErrMsg << "\nfailed request was: ";// << sstr.str();
+    errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << sstr.str();
     throw std::runtime_error(errstr.str());
   }
 }
