@@ -104,47 +104,18 @@ void prepareSqliteFile(sqlite3 *db) {
     throw std::runtime_error(errstr.str());
   } else { std::cout << "database created." << std::endl;}
 }
-/*
-std::string createAttributesInsertionString( Attribute const & attr) {
-  std::stringstream sstr;
-  // TODO: should find another sol than ignore..
-  sstr <<
-    "insert or ignore into attributes(attrname,type) values(\"" <<
-    attr.getName() << "\", \"" << typeToString(attr.getType()) << "\");";
-  return sstr.str();
-}
-std::string createFilelocInsertionString( DatasetSpec const & dset ) {
-  std::stringstream sstr;
-  sstr << 
-    "insert or ignore into filelocations(locname,row,fileid) values('" << dset.datasetname << 
-    "',"<<dset.location.row << ",(select fileid from files where fname = '" << dset.file.filename << 
-    "' and mtime = " << dset.file.mtime << "));";
-  return sstr.str();
-}
-std::string createAttrValueInsertionString( DatasetSpec const & dset, 
-                                            Attribute const & attr ) {
-  std::cout << "inserting \"" << dset.datasetname << "\"..." << std::endl;
-  std::stringstream sstr;
-  sstr <<
-  "insert or ignore into attrvalues(attrid,value) values(( select attrid from attributes where attrname=\'" <<
-  attr.getName() << "\'), ";
-  if(attr.getType() == Type::STRING or attr.getType() == Type::ARRAY)
-    //TODO: need to "escape" single quotes? single quotes are escaped by
-    //single quotes..
-    sstr << "'" << attr.getValue() << "');";
-  else
-    sstr << attr.getValue() << ");";
-  return sstr.str();
-}*/
 std::string createFilelocInsertionString( 
     std::tuple<std::string, std::string, int> const & fileloc ) {
   std::stringstream sstr;
   sstr << 
-    "insert or ignore into filelocations(locname,row,fileid) values('" << 
+    "insert or ignore into filelocations(locname,row,fileid) select '" << 
       std::get<1>(fileloc) << //locname
       "'," << std::get<2>(fileloc) << ",(select fileid from files where fname = '" 
       << std::get<0>(fileloc) <<  //filename
-    "'));";
+    "') where not exists (select 1 from filelocations where locname = '"
+    << std::get<1>(fileloc) << "' and row = " << std::get<2>(fileloc) << 
+    " and fileid = (select fileid from files where fname = '" << std::get<0>(fileloc) 
+    << "'));";
   return sstr.str();
 }
 std::string createAttributesInsertionString( std::pair<std::string, std::string> const & attr ) {
@@ -158,9 +129,17 @@ std::string createAttributeValuesInsertionString(
     std::tuple<std::string, std::string, std::string> const & attrval ) {
   std::stringstream sstr;
   sstr << 
-    "insert or ignore into attrvalues(attrid, value) values(" <<
+    "insert into attrvalues(attrid, value) select " <<
     "(select attrid from attributes where attrname = '" << std::get<0>(attrval) <<
     "' and type = '" <<  std::get<1>(attrval) << "'), ";
+    if( std::get<1>(attrval) == "array" or std::get<1>(attrval) == "string") {
+      sstr << "'" << std::get<2>(attrval) << "'";
+    } else {
+      sstr << std::get<2>(attrval) << "";
+    }
+  sstr << " where not exists ( select 1 from attrvalues where attrid = "
+    "(select attrid from attributes where attrname = '" << std::get<0>(attrval) <<
+    "' and type = '" << std::get<1>(attrval) << "') and value = ";
     if( std::get<1>(attrval) == "array" or std::get<1>(attrval) == "string") {
       sstr << "'" << std::get<2>(attrval) << "');";
     } else {
@@ -173,7 +152,7 @@ std::string createJunctionInsertionString(
   std::stringstream sstr;
 
   sstr <<
-    "insert or ignore into locattrjunction(attrvalid, locid) values(( "
+    "insert into locattrjunction(attrvalid, locid) select ( "
     "select valueid from attrvalues where attrid = ( "
     "select attrid from attributes where attrname = '"
     << std::get<0>(junc.second) << "' and type = '" << std::get<1>(junc.second) << "') and value = ";
@@ -185,7 +164,16 @@ std::string createJunctionInsertionString(
   sstr << "), (select locid from filelocations where locname = '" 
        << std::get<1>(junc.first) << "' and row = " << std::get<2>(junc.first) 
        << " and fileid = ( select fileid from files where fname = '" 
-       << std::get<0>(junc.first) << "')));";
+       << std::get<0>(junc.first) << "')) where not exists ( select 1 from "
+       "locattrjunction where attrvalid = (select valueid from attrvalues where attrid = ( "
+       "select attrid from attributes where attrname = '"
+       << std::get<0>(junc.second) << "' and type = '" << std::get<1>(junc.second) << "' and value = ";
+  if( std::get<1>(junc.second) == "string" or std::get<1>(junc.second) == "array" ) {
+    sstr << "'" << std::get<2>(junc.second) << "'";
+  } else {
+    sstr << std::get<2>(junc.second);
+  }
+  sstr << ")));";
   return sstr.str();
 }
 void insertDataset(sqlite3 *db, Index const & idx ) {
