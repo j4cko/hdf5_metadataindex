@@ -42,11 +42,13 @@ static int dsetspecFileinfoCallback(void *var, int argc, char** argv, char** azC
 }
 static int fileCallback(void *f, int argc, char** argv, char** azColName) {
   if( argc != 2 ) return -1;
-  File* file = static_cast<File*>(f);
+  std::vector<File>* files = static_cast<std::vector<File>*>(f);
+  File file("", 0);
   for(int i = 0; i < argc; i++) {
-    if( std::string(azColName[i]) == "fname" ) file->filename = std::string(argv[i]);
-    else if( std::string(azColName[i]) == "mtime" ) file->mtime = std::stoi(std::string(argv[i]));
+    if( std::string(azColName[i]) == "fname" ) file.filename = std::string(argv[i]);
+    else if( std::string(azColName[i]) == "mtime" ) file.mtime = std::stoi(std::string(argv[i]));
   }
+  files->push_back(std::move(file));
   return 0;
 }
 
@@ -188,7 +190,7 @@ std::string createJunctionInsertionString(
 File getFile(sqlite3 *db, std::string const & file) {
   std::stringstream sstr;
   sstr << "select fname, mtime from files where fname = '"  << file << "';";
-  File f("", 0);
+  std::vector<File> f{File("", 0)};
   char *zErrMsg = nullptr;
   int rc = sqlite3_exec( db,
       sstr.str().c_str(), fileCallback, &f, &zErrMsg );
@@ -197,7 +199,22 @@ File getFile(sqlite3 *db, std::string const & file) {
     errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << sstr.str();
     throw std::runtime_error(errstr.str());
   }
-  return f;
+  if( f.empty() ) throw std::runtime_error("no file returned.");
+  return f.front();
+}
+std::vector<File> listFiles(sqlite3* db) {
+  std::stringstream sstr;
+  sstr << "select fname, mtime from files";
+  std::vector<File> files;
+  char *zErrMsg = nullptr;
+  int rc = sqlite3_exec( db,
+      sstr.str().c_str(), fileCallback, &files, &zErrMsg );
+  if( rc != SQLITE_OK ) {
+    std::stringstream errstr;
+    errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << sstr.str();
+    throw std::runtime_error(errstr.str());
+  }
+  return files;
 }
 void removeFile(sqlite3 *db, std::string const & file) {
   // removes file from database, i.e. removes all filelocations and
