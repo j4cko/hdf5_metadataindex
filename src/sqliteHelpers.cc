@@ -40,6 +40,15 @@ static int dsetspecFileinfoCallback(void *var, int argc, char** argv, char** azC
   }
   return 0;
 }
+static int fileCallback(void *f, int argc, char** argv, char** azColName) {
+  if( argc != 2 ) return -1;
+  File* file = static_cast<File*>(f);
+  for(int i = 0; i < argc; i++) {
+    if( std::string(azColName[i]) == "fname" ) file->filename = std::string(argv[i]);
+    else if( std::string(azColName[i]) == "mtime" ) file->mtime = std::stoi(std::string(argv[i]));
+  }
+  return 0;
+}
 
 static int printCallback(void *NotUsed, int argc, char** argv, char** azColName){
   for(int i = 0; i < argc; i++){
@@ -176,7 +185,21 @@ std::string createJunctionInsertionString(
   sstr << ")));";
   return sstr.str();
 }
-void removeFile(sqlite3 *db, File const & file) {
+File getFile(sqlite3 *db, std::string const & file) {
+  std::stringstream sstr;
+  sstr << "select fname, mtime from files where fname = '"  << file << "';";
+  File f("", 0);
+  char *zErrMsg = nullptr;
+  int rc = sqlite3_exec( db,
+      sstr.str().c_str(), fileCallback, &f, &zErrMsg );
+  if( rc != SQLITE_OK ) {
+    std::stringstream errstr;
+    errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << sstr.str();
+    throw std::runtime_error(errstr.str());
+  }
+  return f;
+}
+void removeFile(sqlite3 *db, std::string const & file) {
   // removes file from database, i.e. removes all filelocations and
   // locattrjunctions and files pointing to this file. doesn't remove attributes
   // and attrvalues because these might potentially be used from other files.
@@ -185,15 +208,12 @@ void removeFile(sqlite3 *db, File const & file) {
   // delete locattrjunctions:
   sstr << "delete from locattrjunction where locid in "
     "(select locid from filelocations where fileid = "
-       "(select fileid from files where fname = '" << file.filename << "' and "
-       "mtime = " << file.mtime << "));";
+       "(select fileid from files where fname = '" << file << "'));";
   // delete filelocations:
   sstr << "delete from filelocations where fileid = "
-       "(select fileid from files where fname = '" << file.filename << "' and "
-       "mtime = " << file.mtime << ");";
+       "(select fileid from files where fname = '" << file << "');";
   // delete file itself:
-  sstr << "delete from files where fname = '"  << file.filename << "' and "
-       "mtime = " << file.mtime << ";";
+  sstr << "delete from files where fname = '"  << file << "';";
   sstr << "commit transaction;";
   char *zErrMsg = nullptr;
   int rc = sqlite3_exec( db,

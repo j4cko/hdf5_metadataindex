@@ -10,6 +10,9 @@
 
 using namespace rqcd_file_index;
 
+bool fileNeedsUpdate(File const & file) {
+  return file.mtime > FileHelpers::getFileModificationTime(file.filename);
+}
 void version(int argc, char** argv) {
   std::cerr << "TODO: take version info from cmake" << std::endl;
 }
@@ -43,7 +46,7 @@ int removeFile(int argc, char** argv) {
     sqlite3 *db;
     sqlite3_open(sqlfile.c_str(), &db);
 
-    sqlite_helpers::removeFile(db, rqcd_file_index::File(h5file));
+    sqlite_helpers::removeFile(db, h5file);
 
     sqlite3_close(db);
   } catch ( std::exception const & exc ) {
@@ -93,7 +96,12 @@ int updateFile(int argc, char** argv) {
     sqlite3 *db;
     sqlite3_open(sqlfile.c_str(), &db);
 
-    sqlite_helpers::removeFile(db, rqcd_file_index::File(h5file));
+    if( not fileNeedsUpdate( sqlite_helpers::getFile(db, h5file) ) )
+    {
+      std::cerr << "ERROR File \"" << h5file << "\" doesn't need update.. To force an update first remove (rm) the file and then add it again." << std::endl;
+      return 1;
+    }
+    sqlite_helpers::removeFile(db, h5file);
 
     Index idx = indexHdf5File(h5file);
     sqlite_helpers::insertDataset(db, idx);
@@ -117,7 +125,7 @@ int main(int argc, char** argv) {
 
   std::string command(argv[1]);
 
-  if( command == "index" ) {
+  if( command == "index" or command  == "add" ) {
     return indexFile(argc, argv);
   } else if ( command == "rm" or command == "remove" ) {
     return removeFile(argc, argv);
