@@ -15,6 +15,7 @@ void prepareSqliteFile(sqlite3 * db);
 File getFile(sqlite3 *db, std::string const & file);
 void removeFile(sqlite3 *db, std::string const & file);
 std::vector<File> listFiles(sqlite3* db);
+std::vector<std::pair<std::string, std::string>> listAttributes(sqlite3* db);
 void insertDataset(sqlite3 *db, Index const & idx);
 DatasetSpec idsToDatasetSpec(sqlite3 *db, int locid);
 std::vector<std::string> idsToDsetnames(sqlite3 *db, std::vector<int> const & locids);

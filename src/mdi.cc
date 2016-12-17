@@ -3,13 +3,23 @@
  * Licensed under MIT License. See LICENSE in the root directory.
  */
 #include <iostream>
+#include <complex>
 #include "attributes.h"
 #include "indexHdf5.h"
 #include "sqliteHelpers.h"
 #include "filehelpers.h"
+#include "postselection.h"
+#include "hdf5ReaderGeneric.h"
+#include "parseJson.h"
 
 using namespace rqcd_file_index;
 
+Index getMatchingDatasetSpecs(sqlite3 *db, Request const & req) {
+  auto ids = sqlite_helpers::getLocIdsMatchingPreSelection(db, req);
+  Index idx = sqlite_helpers::idsToIndex(db, ids);
+  filterIndexByPostselectionRules(idx, req);
+  return idx;
+}
 bool fileNeedsUpdate(File const & file) {
   return file.mtime < FileHelpers::getFileModificationTime(file.filename);
 }
@@ -31,6 +41,32 @@ void help(int argc, char** argv) {
     "                                (without reading from the hdf5 file)" << std::endl <<
     "  help                          outputs this help" << std::endl <<
     "  version                       outputs version information" << std::endl;
+}
+int listAttributes(int argc, char** argv) {
+  if( argc != 3 ) {
+    std::cerr << "TODO give help for attributes." << std::endl;
+    return 1;
+  }
+  const std::string sqlfile(argv[2]);
+  try {
+    if( not FileHelpers::file_exists(sqlfile) ) {
+      throw std::runtime_error("index file does not exist!");
+    }
+    sqlite3 *db;
+    sqlite3_open(sqlfile.c_str(), &db);
+
+    auto attributes = sqlite_helpers::listAttributes(db);
+
+    sqlite3_close(db);
+
+    for( auto const & attr : attributes ) { 
+      std::cout << "  - " << attr.first << " (" << attr.second << ")" << std::endl;
+    }
+  } catch ( std::exception const & exc ) {
+    std::cerr << "ERROR " << exc.what() << std::endl;
+    return 1;
+  }
+  return 0;
 }
 int listFiles(int argc, char** argv) {
   if( argc != 3 ) {
@@ -195,7 +231,90 @@ int updateFile(int argc, char** argv) {
   
   return 0;
 }
+int queryDb(int argc, char** argv) {
+  if( argc != 4 ) {
+    std::cerr << "wrong number of args." << std::endl; 
+    return -1; 
+  }
 
+  const std::string dbfile(argv[2]);
+  const std::string query(argv[3]);
+
+  Request req = queryToRequest(query);
+
+  sqlite3 *db;
+  sqlite3_open(dbfile.c_str(), &db);
+
+  auto idx = getMatchingDatasetSpecs(db, req);
+
+  printIndex(idx, std::cout);
+
+  sqlite3_close(db);
+
+  return 0;
+}
+
+void outputData( std::vector<std::pair<DatasetSpec, std::vector<std::complex<double>>>> const & res ) {
+  for( auto const & hit : res ) {
+    std::cout << hit.first << std::endl;
+    for( auto const & nmbr : hit.second ) {
+      std::cout << "  " << std::real(nmbr) << " " << std::imag(nmbr) << std::endl;
+    }
+  }
+}
+int getData(int argc, char** argv) {
+  if( argc != 4 ) {
+    std::cerr << "wrong number of args." << std::endl; 
+    return -1; 
+  }
+
+  const std::string dbfile(argv[2]);
+  const std::string query(argv[3]);
+
+  Request req = queryToRequest(query);
+
+  sqlite3 *db;
+  sqlite3_open(dbfile.c_str(), &db);
+
+  auto idx = getMatchingDatasetSpecs(db, req);
+
+  std::vector<std::pair<DatasetSpec, std::vector<std::complex<double>>>> res;
+  if ( req.smode == SearchMode::FIRST ) 
+  {
+    try {
+      rqcd_hdf5_reader_generic::H5ReaderGeneric reader(idx.front().file);
+      res.push_back(make_pair(idx.front(), reader.read(idx.front())));
+    } catch (std::exception const & exc) {
+      std::cerr << "ERROR while reading file: " << exc.what() << std::endl;
+      return 1;
+    }
+  } else if ( req.smode == SearchMode::ALL ) {
+    auto files = getUniqueFiles(idx);
+    for( auto file : files ) {
+      // process only this file:
+      auto idxcp = idx;
+      Request onlyThisFileReq;
+      onlyThisFileReq.filerequests.push_back(std::unique_ptr<FileCondition>(
+            new FileConditions::NameMatches(file.filename)));
+      filterIndexByPostselectionRules(idxcp, onlyThisFileReq);
+      try {
+        rqcd_hdf5_reader_generic::H5ReaderGeneric reader(file);
+        for( auto const & dset : idxcp ) {
+          res.push_back(std::make_pair(dset, reader.read(dset)));
+        }
+      } catch (std::exception const & exc) {
+        std::cerr << "ERROR while reading file: " << exc.what() << std::endl;
+        return 1;
+      }
+    }
+  }
+
+  sqlite3_close(db);
+
+  outputData(res);
+
+  return 0;
+}
 
 int main(int argc, char** argv) {
 
@@ -220,6 +339,12 @@ int main(int argc, char** argv) {
     return 0;
   } else if ( command == "files" ) {
     return listFiles(argc, argv);
+  } else if ( command == "attributes" or command == "attr" ) {
+    return listAttributes(argc, argv);
+  } else if ( command == "query" ) {
+    return queryDb(argc, argv);
+  } else if ( command == "get" ) {
+    return getData(argc, argv);
   } else if ( command == "version" ) {
     version(argc, argv);
     return 0;

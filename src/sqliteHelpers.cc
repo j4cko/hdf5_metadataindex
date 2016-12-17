@@ -40,6 +40,18 @@ static int dsetspecFileinfoCallback(void *var, int argc, char** argv, char** azC
   }
   return 0;
 }
+static int attrCallback(void *at, int argc, char** argv, char** azColName) {
+  if( argc != 2 ) return -1;
+  std::vector<std::pair<std::string, std::string>>* attrs = 
+    static_cast<std::vector<std::pair<std::string, std::string>>*>(at);
+  std::string name, type;
+  for(int i = 0; i < argc; i++) {
+    if( std::string(azColName[i]) == "attrname" ) name = std::string(argv[i]);
+    else if( std::string(azColName[i]) == "type" ) type = std::string(argv[i]);
+  }
+  attrs->push_back(std::make_pair(name, type));
+  return 0;
+}
 static int fileCallback(void *f, int argc, char** argv, char** azColName) {
   if( argc != 2 ) return -1;
   std::vector<File>* files = static_cast<std::vector<File>*>(f);
@@ -113,7 +125,7 @@ void prepareSqliteFile(sqlite3 *db) {
     std::stringstream errstr;
     errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << request;
     throw std::runtime_error(errstr.str());
-  } else { std::cout << "database created." << std::endl;}
+  }
 }
 std::string createFilelocInsertionString( 
     std::tuple<std::string, std::string, int> const & fileloc ) {
@@ -201,6 +213,20 @@ File getFile(sqlite3 *db, std::string const & file) {
   }
   if( f.empty() ) throw std::runtime_error("no file returned.");
   return f.front();
+}
+std::vector<std::pair<std::string, std::string>> listAttributes(sqlite3* db) {
+  std::stringstream sstr;
+  sstr << "select attrname, type from attributes";
+  std::vector<std::pair<std::string, std::string>> attrs;
+  char *zErrMsg = nullptr;
+  int rc = sqlite3_exec( db,
+      sstr.str().c_str(), attrCallback, &attrs, &zErrMsg );
+  if( rc != SQLITE_OK ) {
+    std::stringstream errstr;
+    errstr << "SQL error: " << zErrMsg << "\nfailed request was: " << sstr.str();
+    throw std::runtime_error(errstr.str());
+  }
+  return attrs;
 }
 std::vector<File> listFiles(sqlite3* db) {
   std::stringstream sstr;

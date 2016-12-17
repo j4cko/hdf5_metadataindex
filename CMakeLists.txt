@@ -8,8 +8,6 @@ add_library( hdf5index src/filehelpers.cc src/h5helpers.cc src/indexHdf5.cc src/
 add_library( sqliteindex src/sqliteHelpers.cc )
 
 add_executable(mdi src/mdi.cc)
-add_executable(readHdf5 src/readHdf5.cc )
-add_executable(queryDb src/queryDb.cc )
 add_executable(tests src/tests.cc )
 
 macro(use_cxx11)
@@ -41,11 +39,9 @@ include_directories(${SQLITE3_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${SQLITE3_LIBRARIES})
 
 target_link_libraries( mdi sqliteindex hdf5index fileindex ${LIBS} )
-target_link_libraries( readHdf5 sqliteindex hdf5index fileindex ${LIBS} )
-target_link_libraries( queryDb sqliteindex fileindex ${LIBS} )
 target_link_libraries( tests sqliteindex hdf5index fileindex ${LIBS} )
 
-install(TARGETS mdi queryDb readHdf5 fileindex hdf5index sqliteindex
+install(TARGETS mdi fileindex hdf5index sqliteindex
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
